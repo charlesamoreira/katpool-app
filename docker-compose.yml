@@ -270,6 +270,7 @@ services:
 
   katpool-backup:
     image: ghcr.io/argonmining/katpool-app-db-backup:beta-v1.0.2-main
+    pull_policy: always
     container_name: katpool-backup
     depends_on:
       - postgres
