@@ -154,7 +154,7 @@ export class PushMetrics {
       // await this.updateMinerRewardGauge(walletAddress, minerId, blockHash);
       this.monitoring.log(`PushMetrics: Metrics pushed to Pushgateway`);
     } catch (err) {
-      console.error(`[${new Date().toISOString()}] PushMetrics: ERROR: Error pushing metrics to Pushgateway:`, err);
+      this.monitoring.error(`PushMetrics: Error pushing metrics to Pushgateway: ${err}`);
     }
   }
 
