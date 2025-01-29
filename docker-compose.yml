@@ -280,6 +280,8 @@ services:
       - /root/docker_deployment/backup/files:/backup/files
       - ./config:/config
       - ./backup/google-credentials.json:/app/google-credentials.json
+      - ./src/monitoring:/src/monitoring
+      - ./src/cron-schedule.ts:/src/cron-schedule.ts
     networks:
       - backend
     restart: always
