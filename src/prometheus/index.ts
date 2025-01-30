@@ -91,7 +91,7 @@ export const successBlocksDetailsGauge = new Gauge({
 export const jobsNotFound = new Gauge({
   name: 'jobs_not_found_1min_count',
   help: 'Total jobs not Found for registered template',
-  labelNames: ['miner_id', 'pool_address']
+  labelNames: ['miner_id', 'wallet_address']
 });
 
 export const varDiff = new Gauge({
