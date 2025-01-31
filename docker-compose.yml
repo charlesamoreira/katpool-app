@@ -220,34 +220,6 @@ services:
       driver: journald
       options:
         tag: "{{.Name}}"
-    command:
-      - '--push.disable-consistency-check'  # Add this flag here as well
-
-  pushgateway1:
-    image: prom/pushgateway
-    container_name: katpool-pushgateway1
-    networks:
-      - backend
-    restart: always
-    logging:
-      driver: journald
-      options:
-        tag: "{{.Name}}"
-    command:
-      - '--push.disable-consistency-check'  # Add this flag here as well
-    
-  pushgateway2:
-    image: prom/pushgateway
-    container_name: katpool-pushgateway2
-    networks:
-      - backend
-    restart: always
-    logging:
-      driver: journald
-      options:
-        tag: "{{.Name}}"
-    command:
-      - '--push.disable-consistency-check'  # Add this flag here as well
 
   nginx:
     container_name: katpool-nginx
