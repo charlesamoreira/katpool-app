@@ -1,4 +1,4 @@
-# KASPA Mining Pool using rusty-kaspa WASM 
+# KASPA Mining Pool using rusty-kaspa WASM
 
 Once the RPC connection is established, the pool initializes the treasury, which listens for UTXO events. When these events occur, the treasury processes them to track available funds. Next, templates are fetched and stored to generate job IDs for miners. These jobs are then distributed to miners for processing. Miners connect to the pool via the stratum protocol, subscribing and submitting their work (shares).
 
