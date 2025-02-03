@@ -6,7 +6,7 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { PushMetrics } from "./src/prometheus";
+import { PushMetrics, startMetricsServer } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -82,6 +82,8 @@ if (!katpoolPshGw) {
 export const metrics = new PushMetrics(katpoolPshGw);
 
 sendConfig();
+
+startMetricsServer();
 
 const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
 const templates = new Templates(rpc, treasury.address, config.stratum.templates.cacheSize);
