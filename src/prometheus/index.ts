@@ -167,7 +167,6 @@ export function startMetricsServer() {
 export class PushMetrics {
 
   constructor(pushGatewayUrl: string) {
-    startMetricsServer();
   }
 
 
