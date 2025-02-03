@@ -25,21 +25,33 @@ jobs:
         run: echo "${{ secrets.GB_KATPOOL_TOKEN }}" | docker login ${{ env.REGISTRY }} --username argonmining --password-stdin
 
       - name: Docker Build
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          IMAGE_NAME: ${{ github.repository | toLower}}:beta-v1.0.2-${{ env.branch_name }}
+          OWNER: '${{ github.repository }}'
+          IMAGE_NAME: ${{ env.OWNER }}:beta-v1.0.2-${{ env.branch_name }}
         run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} .
 
       - name: Docker Push
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          IMAGE_NAME: ${{ github.repository | toLower}}:beta-v1.0.2-${{ env.branch_name }}
+          OWNER: '${{ github.repository }}'
+          IMAGE_NAME: ${{ env.OWNER }}:beta-v1.0.2-${{ env.branch_name }}
         run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Docker Build DB Backup
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          IMAGE_NAME: ${{ github.repository | toLower}}-db-backup:beta-v1.0.2-${{ env.branch_name }}
+          OWNER: '${{ github.repository }}'
+          IMAGE_NAME: ${{ env.OWNER }}-db-backup:beta-v1.0.2-${{ env.branch_name }}
         run: docker build -f backup/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} backup/
 
       - name: Docker Push DB Backup
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          IMAGE_NAME: ${{ github.repository | toLower}}-db-backup:beta-v1.0.2-${{ env.branch_name }}
+          OWNER: '${{ github.repository }}'
+          IMAGE_NAME: ${{ env.OWNER }}-db-backup:beta-v1.0.2-${{ env.branch_name }}
         run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
