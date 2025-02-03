@@ -110,7 +110,7 @@ services:
   #     tag: "{{.Name}}"
 
   go-app:
-    image: ghcr.io/argonmining/katpool-blocktemplate-fetcher:beta-v1.0.2-main  # Build the Go app from the ./app directory
+    image: ghcr.io/nacho-the-kat/katpool-blocktemplate-fetcher:beta-v1.0.2-main  # Build the Go app from the ./app directory
     pull_policy: always
     container_name: go-app
     env_file:
@@ -129,7 +129,7 @@ services:
         tag: "{{.Name}}"
 
   katpool-app:
-    image: ghcr.io/argonmining/katpool-app:beta-v1.0.2-main
+    image: ghcr.io/nacho-the-kat/katpool-app:beta-v1.0.2-main
     pull_policy: always
     container_name: katpool-app
     depends_on:
@@ -152,7 +152,7 @@ services:
         tag: "{{.Name}}"
 
   katpool-monitor:
-    image: ghcr.io/argonmining/katpool-monitor:beta-v1.0.2-main
+    image: ghcr.io/nacho-the-kat/katpool-monitor:beta-v1.0.2-main
     pull_policy: always
     container_name: katpool-monitor
     depends_on:
@@ -171,7 +171,7 @@ services:
         tag: "{{.Name}}"
 
   katpool-payment:
-    image: ghcr.io/argonmining/katpool-payment:beta-v1.0.2-main
+    image: ghcr.io/nacho-the-kat/katpool-payment:beta-v1.0.2-main
     pull_policy: always
     container_name: katpool-payment
     depends_on:
@@ -241,7 +241,7 @@ services:
         tag: "{{.Name}}"
 
   katpool-backup:
-    image: ghcr.io/argonmining/katpool-app-db-backup:beta-v1.0.2-main
+    image: ghcr.io/nacho-the-kat/katpool-app-db-backup:beta-v1.0.2-main
     pull_policy: always
     container_name: katpool-backup
     depends_on:
