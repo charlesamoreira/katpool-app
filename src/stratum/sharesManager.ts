@@ -1,6 +1,5 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from "../../wasm/kaspa";
-import { Pushgateway } from 'prom-client';
 import { type Worker } from './server';
 import type { RegistryContentType } from 'prom-client';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
@@ -63,7 +62,6 @@ export class SharesManager {
   private contributions: Map<bigint, Contribution> = new Map();
   private miners: Map<string, MinerData> = new Map();
   private poolAddress: string;
-  private pushGateway: Pushgateway<RegistryContentType>;
   private monitoring: Monitoring;
   private shareWindow: Denque<Contribution>;
   private lastAllocationTime: number;
@@ -71,7 +69,6 @@ export class SharesManager {
   constructor(poolAddress: string, pushGatewayUrl: string) {
     this.poolAddress = poolAddress;
     this.monitoring = new Monitoring();
-    this.pushGateway = new Pushgateway<RegistryContentType>(pushGatewayUrl);
     this.startStatsThread(); // Start the stats logging thread
     this.shareWindow = new Denque();
     this.lastAllocationTime = Date.now();
@@ -317,14 +314,6 @@ export class SharesManager {
             toleranceErrs.push(`no diff sent to client ${workerName}`);
             continue;
           }
-
-          // if (workerStats.asicType == AsicType.Bitmain) {
-          //   expectedShareRate = 20
-          // } else if (workerStats.asicType == AsicType.IceRiver) {
-          //   expectedShareRate = 10
-          // } else if (workerStats.asicType == AsicType.GoldShell) {
-          //   expectedShareRate = 15
-          // }
 
           const diff = workerStats.minDiff;
           const shares = workerStats.varDiffSharesFound;

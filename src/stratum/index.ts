@@ -38,8 +38,6 @@ export default class Stratum extends EventEmitter {
   sharesManager: SharesManager;
   private minerDataLock = new Mutex();
   private extraNonceSize:number;
-  // private maxExtranonce: number;
-  // private nextExtranonce:number;
 
   constructor(templates: Templates, port: number, initialDifficulty: number, pushGatewayUrl: string, poolAddress: string, sharesPerMin: number) {
     super();
@@ -63,8 +61,6 @@ export default class Stratum extends EventEmitter {
       });;
 
     this.extraNonceSize = Math.min(Number(config.stratum.extraNonceSize), 3 ) || 0;
-    // this.maxExtranonce = Math.pow(2, 8 * Math.min(this.extraNonceSize, 3)) - 1;
-    // this.nextExtranonce = 0;
   }
 
   announceTemplate(id: string, hash: string, timestamp: bigint, header: IRawHeader) {
@@ -122,21 +118,9 @@ export default class Stratum extends EventEmitter {
           if (this.subscriptors.has(socket)) throw Error('Already subscribed');
           const minerType = request.params[0].toLowerCase();
           response.result = [true, "EthereumStratum/1.0.0"]
-          // let lExtranonce = 0;
-          // if (this.extraNonceSize > 0) {
-          //   lExtranonce = this.nextExtranonce;
-
-          //   if (this.nextExtranonce < this.maxExtranonce) {
-          //     this.nextExtranonce++;
-          //   } else {
-          //     this.nextExtranonce = 0;
-          //     this.monitoring.log("WARN : Wrapped extranonce! New clients may be duplicating work...");
-          //   }
-          // }
 
           // Format extranonce as a hexadecimal string with padding
           if (this.extraNonceSize > 0) {
-            //socket.data.extraNonce = lExtranonce.toString(16).padStart(this.extraNonceSize * 2, "0");
             socket.data.extraNonce = randomBytes(2).toString('hex')
           }   
           if (bitMainRegex.test(minerType)) {

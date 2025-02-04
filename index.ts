@@ -10,7 +10,6 @@ import { PushMetrics, startMetricsServer } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
-import { ExitStatus, getParsedCommandLineOfConfigFile } from "typescript";
 
 function shutdown() {
   monitoring.log("\n\n Gracefully shutting down the pool")
@@ -75,11 +74,7 @@ if (!treasuryPrivateKey) {
   throw new Error('Environment variable TREASURY_PRIVATE_KEY is not set.');
 }
 
-const katpoolPshGw = process.env.PUSHGATEWAY;
-if (!katpoolPshGw) {
-  throw new Error('Environment variable PUSHGATEWAY is not set.');
-}
-export const metrics = new PushMetrics(katpoolPshGw);
+export const metrics = new PushMetrics();
 
 sendConfig();
 

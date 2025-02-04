@@ -9,8 +9,3 @@ scrape_configs:
   - job_name: 'katpool-monitor'
     static_configs:
       - targets: ['katpool-monitor:9300']
-
-  # - job_name: 'katpool-pushgateway'
-  #   static_configs:
-  #     - targets: ['katpool-pushgateway:9091']
-    

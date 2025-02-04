@@ -1,4 +1,4 @@
-import { collectDefaultMetrics, Pushgateway, register, Gauge } from 'prom-client';
+import { collectDefaultMetrics, register } from 'prom-client';
 import PQueue from 'p-queue';
 import type { RegistryContentType } from 'prom-client';
 import Monitoring from '../monitoring';
@@ -165,11 +165,6 @@ export function startMetricsServer() {
 }
 
 export class PushMetrics {
-
-  constructor(pushGatewayUrl: string) {
-  }
-
-
   async updateMinerWalletGauge() {
     const db = new Database(process.env.DATABASE_URL || '');
     const balances = await db.getAllBalances();

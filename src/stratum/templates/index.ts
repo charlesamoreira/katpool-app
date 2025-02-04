@@ -5,7 +5,6 @@ import { minedBlocksGauge, paidBlocksGauge, successBlocksDetailsGauge } from '..
 import Monitoring from '../../monitoring'
 import { DEBUG } from '../../../index'
 import { metrics } from '../../../index';   
-import JsonBig from 'json-bigint';
 import Database from '../../pool/database';
 import redis, { type RedisClientType } from 'redis';
 import config from '../../../config/config.json';
