@@ -132,14 +132,13 @@ export default class Pool {
     const scaledTotal = BigInt(totalWork * 100);
 
     const database = new Database(process.env.DATABASE_URL || '');
-    // We don't have miner_id and corresponding wallet address
     let {reward_block_hash, block_hash, daaScoreF} = await this.fetchBlockHashAndDaaScore(txnId)
     if (reward_block_hash == '' && daaScoreF == '0') { /* Fallback*/ } 
     else {
       if (daaScoreF === '0') daaScoreF = daaScore
           
       // We don't have miner_id and corresponding wallet address
-      await database.addBlockDetails(block_hash, '',reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
+      await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
     }
 
     // Allocate rewards proportionally based on difficulty
