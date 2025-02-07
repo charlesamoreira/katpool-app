@@ -13,22 +13,18 @@ import axiosRetry from 'axios-retry';
 axiosRetry(axios, { 
    retries: 3,
    retryDelay: (retryCount) => {
-    console.log(`retry count: `, retryCount);
     return retryCount * 1000;
    },
    retryCondition(error) {
-    // @ts-ignore
-    switch (error.response.status) {
-      case 404:
-      case 422:
-      case 429:
-      case 500:
-      case 501:
-        return true;
-      default:
-        return false;
-      }
-   },
+    // Ensure error.response exists before accessing status
+    if (!error.response) {
+      console.error("No response received:", error.message);
+      return false; // Do not retry if no response (e.g., network failure)
+    }
+
+    const retryableStatusCodes = [404, 422, 429, 500, 501];
+    return retryableStatusCodes.includes(error.response.status);
+   }
 });
  
 let KASPA_BASE_URL = 'https://api.kaspa.org';
