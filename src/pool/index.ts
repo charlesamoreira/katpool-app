@@ -8,7 +8,29 @@ import { SharesManager } from '../stratum/sharesManager'; // Import SharesManage
 import { PushMetrics } from '../prometheus'; // Import the PushMetrics class
 import axios, { AxiosError } from 'axios';
 import config from "../../config/config.json";
-
+import axiosRetry from 'axios-retry';
+ 
+axiosRetry(axios, { 
+   retries: 3,
+   retryDelay: (retryCount) => {
+    console.log(`retry count: `, retryCount);
+    return retryCount * 1000;
+   },
+   retryCondition(error) {
+    // @ts-ignore
+    switch (error.response.status) {
+      case 404:
+      case 422:
+      case 429:
+      case 500:
+      case 501:
+        return true;
+      default:
+        return false;
+      }
+   },
+});
+ 
 let KASPA_BASE_URL = 'https://api.kaspa.org';
 
 if( config.network === "testnet-10" ) {
@@ -113,12 +135,17 @@ export default class Pool {
 
     const scaledTotal = BigInt(totalWork * 100);
 
-    let {reward_block_hash, block_hash, daaScoreF} = await this.fetchBlockHashAndDaaScore(txnId)
-    if (daaScoreF === '0') daaScoreF = daaScore
-    
     const database = new Database(process.env.DATABASE_URL || '');
     // We don't have miner_id and corresponding wallet address
+    let {reward_block_hash, block_hash, daaScoreF} = await this.fetchBlockHashAndDaaScore(txnId)
     await database.addBlockDetails(block_hash, '',reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
+    if (reward_block_hash == '' && daaScoreF == '0') { /* Fallback*/ } 
+    else {
+      if (daaScoreF === '0') daaScoreF = daaScore
+          
+      // We don't have miner_id and corresponding wallet address
+      await database.addBlockDetails(block_hash, '',reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
+    }
 
     // Allocate rewards proportionally based on difficulty
     for (const [address, work] of works) {
@@ -139,7 +166,7 @@ export default class Pool {
     if (works.size > 0 && poolFee > 0) this.revenuize(poolFee);
   }
 
-  handleError(error: unknown, context: string): void {
+  handleError(error: unknown, context: string) {
     if (error instanceof AxiosError) {
       this.monitoring.error(`API call failed: ${error.message}.`);
       this.monitoring.error(`${context}`);
@@ -147,6 +174,7 @@ export default class Pool {
         this.monitoring.error(`Response status: ${error.response.status}`);
         if (DEBUG) this.monitoring.error(`Response data: ${JSON.stringify(error.response.data)}`);
       }
+      return { reward_block_hash: '', block_hash: 'block_hash_placeholder', daaScoreF: '0' };
     } else {
       this.monitoring.error(`Unexpected error: ${error}`);
     }
@@ -159,7 +187,6 @@ export default class Pool {
     // Fetch reward hash
     try {
       const response = await axios.get(`${KASPA_BASE_URL}/transactions/${txnId}?inputs=false&outputs=false&resolve_previous_outpoints=no`, {
-        timeout: 5000, // Timeout for safety
       });
       
       if (response?.status !== 200 && !response?.data) {
@@ -175,7 +202,6 @@ export default class Pool {
     // Fetch actual block hash
     try {
       const response = await axios.get(`${KASPA_BASE_URL}/blocks/${reward_block_hash}?includeColor=false`, {
-        timeout: 5000, // Timeout for safety
       });
       
       if (response?.status !== 200 && !response?.data) {
@@ -187,7 +213,6 @@ export default class Pool {
           
           try {
             const response = await axios.get(`${KASPA_BASE_URL}/blocks/${hash}?includeColor=false`, {
-              timeout: 5000, // Timeout for safety
             });
             
             const targetPattern = /\/Katpool$/;
@@ -199,8 +224,10 @@ export default class Pool {
               block_hash = hash
               daaScoreF = response.data.header.daaScore
               break    
+            } else if (response?.status === 200 && response?.data && !targetPattern.test(response.data.extra.minerInfo)) {
+              continue;
             } else {
-              this.monitoring.error(`Error Fetching block hash for transaction ${txnId}`)
+              this.monitoring.error(`Error Fetching block hash for transaction ${txnId}`);
             }
           } catch (error) {
               this.handleError(error, `Fetching block hash for transaction ${txnId}`);
