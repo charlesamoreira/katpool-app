@@ -18,7 +18,7 @@ axiosRetry(axios, {
    retryCondition(error) {
     // Ensure error.response exists before accessing status
     if (!error.response) {
-      console.error("No response received:", error.message);
+      new Monitoring().error(`No response received: ${error.message}`);
       return false; // Do not retry if no response (e.g., network failure)
     }
 
