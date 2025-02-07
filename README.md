@@ -27,7 +27,7 @@ The recommended installation is via docker compose. There are many instances tha
 * Katpool-backup: performs db dumps and uploads these dumps to google drive.
 * [Katpool-monitor](https://github.com/Nacho-the-Kat/katpool-monitor): taking the initial config from Katpool and sharing miner balances and total to prometheus and via APIs.
 * prometheus: pulls metrics from Katpool and displaying metrics of the pool
-* [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): fetches block templates using *gRPC* connection and sends them over redis channel. Katpool-app fetches templates from Redis channel.
+* [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using *gRPC* connection and sends them over redis channel. Katpool-app fetches templates from Redis channel.
 * redis: Receives block templates from go-app. This Redis channel is subscribed by Katpool-app.
 * [Katpool-payment](https://github.com/Nacho-the-Kat/katpool-payment): taking balances from the database and distibuting payments
 
@@ -223,7 +223,7 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
    - The server connects to the Kaspa network via the RPC client. It fetches block templates from Redis channel.
 
 2. **Fetching Block Templates**:
-   - The server fetches a new block template from the Kaspa network. We have used [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch block templates using gRPC connection and sends them over redis channel. 
+   - We have used [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using *gRPC* connection and sends them over redis channel. 
    - Katpool-app fetches block templates from Redis channel.
    - It creates a PoW object from the template to help miners validate their work.
    - The block template and PoW object are stored in the `templates` map.
