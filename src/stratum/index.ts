@@ -39,10 +39,10 @@ export default class Stratum extends EventEmitter {
   private minerDataLock = new Mutex();
   private extraNonceSize:number;
 
-  constructor(templates: Templates, port: number, initialDifficulty: number, pushGatewayUrl: string, poolAddress: string, sharesPerMin: number) {
+  constructor(templates: Templates, port: number, initialDifficulty: number, poolAddress: string, sharesPerMin: number) {
     super();
     this.monitoring = new Monitoring
-    this.sharesManager = new SharesManager(poolAddress, pushGatewayUrl);
+    this.sharesManager = new SharesManager(poolAddress);
     this.server = new Server(port, initialDifficulty, this.onMessage.bind(this));
     this.difficulty = initialDifficulty;
     this.templates = templates;

@@ -66,7 +66,7 @@ export class SharesManager {
   private shareWindow: Denque<Contribution>;
   private lastAllocationTime: number;
 
-  constructor(poolAddress: string, pushGatewayUrl: string) {
+  constructor(poolAddress: string) {
     this.poolAddress = poolAddress;
     this.monitoring = new Monitoring();
     this.startStatsThread(); // Start the stats logging thread
