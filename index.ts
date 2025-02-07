@@ -83,5 +83,5 @@ startMetricsServer();
 const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
 const templates = new Templates(rpc, treasury.address, config.stratum.templates.cacheSize);
 
-const stratum = new Stratum(templates, config.stratum.port, config.stratum.difficulty, katpoolPshGw, treasury.address, config.stratum.sharesPerMinute);
+const stratum = new Stratum(templates, config.stratum.port, config.stratum.difficulty, treasury.address, config.stratum.sharesPerMinute);
 const pool = new Pool(treasury, stratum, stratum.sharesManager);
