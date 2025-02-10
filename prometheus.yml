@@ -3,6 +3,8 @@ global:
 
 scrape_configs:
   - job_name: 'katpool-app'
+    scrape_interval: 45s
+    scrape_timeout: 30s
     static_configs:
       - targets: ['katpool-app:9999']
 
