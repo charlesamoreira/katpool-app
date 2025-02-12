@@ -57,7 +57,7 @@ export default class Pool {
     this.database = new Database(databaseUrl); // Change this line
     this.monitoring = new Monitoring();
     this.sharesManager = sharesManager; // Initialize SharesManager
-    this.pushMetrics = new PushMetrics(process.env.PUSHGATEWAY || ''); // Initialize PushMetrics
+    this.pushMetrics = new PushMetrics(); // Initialize PushMetrics
 
     this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
     this.treasury.on('coinbase', (minerReward: bigint, poolFee: bigint, txnId: string, daaScore: string) => {

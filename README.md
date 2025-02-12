@@ -22,12 +22,14 @@ The recommended installation is via docker compose. There are many instances tha
 
 ### Container Instances
 
-* katpool-app: main app and object of this repository
-* katpool-db: postgres DB
-* [katpool-monitor](https://github.com/argonmining/katpool-monitor): taking the initial config from katpool and sharing miner balances and total to prometheus and via APIs.
-* prometheus: displaying metrics of the pool
-* pushgateway: receiving metrics from katpool to have them passed to prometheus
-* [katpool-payment](https://github.com/argonmining/katpool-payment) (still under development): taking balances from the database and distibuting payments
+* Katpool-app: *main app* and object of this repository
+* Katpool-db: postgres DB
+* Katpool-backup: performs db dumps and uploads these dumps to google drive.
+* [Katpool-monitor](https://github.com/Nacho-the-Kat/katpool-monitor): taking the initial config from Katpool and sharing miner balances and total to prometheus and via APIs.
+* prometheus: pulls metrics from Katpool and displaying metrics of the pool
+* [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using *gRPC* connection and sends them over redis channel. Katpool-app fetches templates from Redis channel.
+* redis: Receives block templates from go-app. This Redis channel is subscribed by Katpool-app.
+* [Katpool-payment](https://github.com/Nacho-the-Kat/katpool-payment): taking balances from the database and distibuting payments
 
 ### Create env variables
 create .env file
@@ -38,7 +40,6 @@ POSTGRES_PASSWORD=<db-passwd>
 POSTGRES_DB=<db-name>
 POSTGRES_HOSTNAME='katpool-db' # Configure the hostname.
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOSTNAME}:5432/${POSTGRES_DB}"
-PUSHGATEWAY="http://katpool-pushgateway:9091" # Configure the pushgateway url.
 MONITOR="http://katpool-monitor:9302" # Configure the monitor url.
 DEBUG=1
 ```
@@ -52,7 +53,7 @@ Create `postgres_data` folder at the repository root location for the postgres d
 * migrate.sql: to make changes to current database. Add new table, update existing table. NOTE: Overwrite the content of this file for performing latest changes.
 * nginx.conf
 * config 
-* **wasm** folder must the also available. Check download link above
+* **wasm** folder must the also available. Check download link above [For running outside Docker container]
 
 Additionally:
 * **prometheus_data** folder: Optionally you can uncomment prometheus_data in docker_compose.yml to bring persistency between restarts. Prometheus requires writes and read permissions.
@@ -64,9 +65,9 @@ Check `config/config.json` and do the required configurations to your pool.
 
 Please refer to [Crontab.guru](https://crontab.guru/) to set these two cron expressions.
 
-* **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (0 */12 * * *).
+* **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
 
-* **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (0 */12 * * *).
+* **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
 
 * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
 
@@ -177,16 +178,29 @@ CREATE TABLE IF NOT EXISTS miners_balance (
   wallet VARCHAR(255),
   balance NUMERIC
 );
+
 CREATE TABLE IF NOT EXISTS wallet_total (
   address VARCHAR(255) PRIMARY KEY,
   total NUMERIC
 );
+
 CREATE TABLE IF NOT EXISTS payments (
     id SERIAL PRIMARY KEY,
     wallet_address TEXT[] NOT NULL,
     amount BIGINT NOT NULL,
     timestamp TIMESTAMP DEFAULT NOW(),
     transaction_hash VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS block_details (
+    mined_block_hash VARCHAR(255) PRIMARY KEY,
+    miner_id VARCHAR(255),
+    pool_address VARCHAR(255),
+    reward_block_hash VARCHAR(255),
+    wallet VARCHAR(255),
+    daa_score VARCHAR(255),
+    miner_reward BIGINT NOT NULL,
+    timestamp TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -206,10 +220,11 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
 
 1. **Starting the Server**:
    - The Stratum server starts and begins listening for connections from miners.
-   - The server connects to the Kaspa network via the RPC client to fetch block templates.
+   - The server connects to the Kaspa network via the RPC client. It fetches block templates from Redis channel.
 
 2. **Fetching Block Templates**:
-   - The server fetches a new block template from the Kaspa network.
+   - We have used [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using *gRPC* connection and sends them over redis channel. 
+   - Katpool-app fetches block templates from Redis channel.
    - It creates a PoW object from the template to help miners validate their work.
    - The block template and PoW object are stored in the `templates` map.
 

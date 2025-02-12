@@ -1,16 +1,14 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 30s
+  scrape_timeout: 20s
 
 scrape_configs:
   - job_name: 'katpool-app'
+    scrape_interval: 45s
+    scrape_timeout: 30s
     static_configs:
       - targets: ['katpool-app:9999']
 
   - job_name: 'katpool-monitor'
     static_configs:
       - targets: ['katpool-monitor:9300']
-
-  # - job_name: 'katpool-pushgateway'
-  #   static_configs:
-  #     - targets: ['katpool-pushgateway:9091']
-    
