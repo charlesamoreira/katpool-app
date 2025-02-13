@@ -1,0 +1,1 @@
+ALTER TABLE miners_balance ADD nacho_rebate_kas NUMERIC DEFAULT 0;
