@@ -21,7 +21,8 @@
     "maxDiff": 131072
   },
   "treasury": {
-    "fee": 0
+    "fee": 0.75,
+    "nachoRebate": 33
   },
   "payoutCronSchedule": "0 */12 * * *",
   "backupCronSchedule": "0 */12 * * *",
