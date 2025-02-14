@@ -37,10 +37,10 @@ export default class Database {
 
       // Update miners_balance table
       const resNK = await client.query('SELECT nacho_rebate_kas FROM miners_balance WHERE id = $1', [key]);
-      let minerNachoKas = resNK.rows[0] ? BigInt(resNK.rows[0].balance) : 0n;
+      let minerNachoKas = resNK.rows[0] ? BigInt(resNK.rows[0].nacho_rebate_kas) : 0n;
       minerNachoKas += nacho_rebate_kas;
 
-      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance', [
+      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance, nacho_rebate_kas) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance', [
         key,
         minerId,
         wallet,
