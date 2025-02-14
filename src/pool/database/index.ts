@@ -40,12 +40,12 @@ export default class Database {
       let minerNachoKas = resNK.rows[0] ? BigInt(resNK.rows[0].nacho_rebate_kas) : 0n;
       minerNachoKas += nacho_rebate_kas;
 
-      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance, nacho_rebate_kas) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance', [
+      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance, nacho_rebate_kas) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance, nacho_rebate_kas = EXCLUDED.nacho_rebate_kas', [
         key,
         minerId,
         wallet,
         minerBalance,
-        nacho_rebate_kas,
+        minerNachoKas,
       ]);
 
       // Update wallet_total table
