@@ -23,7 +23,7 @@ export default class Database {
     });
   }
 
-  async addBalance(minerId: string, wallet: string, balance: bigint) {
+  async addBalance(minerId: string, wallet: string, balance: bigint, nacho_rebate_kas: bigint) {
     const client = await this.pool.connect();
     const key = `${minerId}_${wallet}`;
 
@@ -35,11 +35,17 @@ export default class Database {
       let minerBalance = res.rows[0] ? BigInt(res.rows[0].balance) : 0n;
       minerBalance += balance;
 
-      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance', [
+      // Update miners_balance table
+      const resNK = await client.query('SELECT nacho_rebate_kas FROM miners_balance WHERE id = $1', [key]);
+      let minerNachoKas = resNK.rows[0] ? BigInt(resNK.rows[0].nacho_rebate_kas) : 0n;
+      minerNachoKas += nacho_rebate_kas;
+
+      await client.query('INSERT INTO miners_balance (id, miner_id, wallet, balance, nacho_rebate_kas) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance, nacho_rebate_kas = EXCLUDED.nacho_rebate_kas', [
         key,
         minerId,
         wallet,
         minerBalance,
+        minerNachoKas,
       ]);
 
       // Update wallet_total table

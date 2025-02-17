@@ -80,7 +80,7 @@ export default class Pool {
   private async revenuize(amount: bigint) {
     const address = this.treasury.address; // Use the treasury address
     const minerId = 'pool'; // Use a fixed ID for the pool itself
-    await this.database.addBalance(minerId, address, amount); // Use the total amount as the share
+    await this.database.addBalance(minerId, address, amount, 0n); // Use the total amount as the share
     this.monitoring.log(`Pool: Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase.`);
   }
 
@@ -141,12 +141,15 @@ export default class Pool {
       await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
     }
 
+    // Initially show NACHO rebate KAS as config.treasury.nachoRebate ~0.33% for all. If he holds 100M+ NACHO or 1 NFT he may get full rebate
+    const rebate = (poolFee * BigInt(config.treasury.nachoRebate * 100)) / 10000n;
     // Allocate rewards proportionally based on difficulty
     for (const [address, work] of works) {
       const scaledWork = BigInt(work.difficulty * 100);
       const share = (scaledWork * minerReward) / scaledTotal;
+      const nacho_rebate_kas = (scaledWork * rebate) / scaledTotal;
 
-      await this.database.addBalance(work.minerId, address, share);
+      await this.database.addBalance(work.minerId, address, share, nacho_rebate_kas);
 
       // Track rewards for the miner
       this.pushMetrics.updateMinerRewardGauge(address, work.minerId, block_hash, daaScoreF);

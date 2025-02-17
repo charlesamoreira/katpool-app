@@ -41,7 +41,7 @@ export default class Treasury extends EventEmitter {
     })
 
     this.processor.addEventListener('maturity', async (e) => {
-      this.monitoring.log(`Maturity event data : ${JsonBig.stringify(e)}`)
+      // this.monitoring.log(`Maturity event data : ${JsonBig.stringify(e)}`)
       if (e?.data?.type === 'incoming') {
         // @ts-ignore
         if (!e?.data?.data?.utxoEntries?.some(element => element?.isCoinbase)) {
