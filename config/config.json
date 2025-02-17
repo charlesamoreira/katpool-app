@@ -29,5 +29,6 @@
   "thresholdAmount": "500000000",
   "nachoSwap": 95,
   "nachoRebateBuffer": "500000000",
+  "defaultTicker": "NACHO",
   "backupEmailAddress": "socials@onargon.com"
 }
