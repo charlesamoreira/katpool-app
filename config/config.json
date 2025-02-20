@@ -27,6 +27,7 @@
   "payoutCronSchedule": "0 */12 * * *",
   "backupCronSchedule": "0 */12 * * *",
   "thresholdAmount": "500000000",
+  "nachoThresholdAmount": "100000000000",    
   "nachoSwap": 95,
   "nachoRebateBuffer": "500000000",
   "defaultTicker": "NACHO",
