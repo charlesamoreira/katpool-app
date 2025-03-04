@@ -138,7 +138,7 @@ export default class Pool {
       if (daaScoreF === '0') daaScoreF = daaScore
           
       // We don't have miner_id and corresponding wallet address
-      await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward); 
+      await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward + poolFee); 
     }
 
     // Initially show NACHO rebate KAS as config.treasury.nachoRebate ~0.33% for all. If he holds 100M+ NACHO or 1 NFT he may get full rebate
