@@ -2,7 +2,7 @@ import type { Socket } from 'bun';
 import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
 import Server, { type Miner, type Worker } from './server';
-import { type Request, type Response, type Event, errors } from './server/protocol';
+import { type Request, type Response, type Event, StratumError } from './server/protocol';
 import type Templates from './templates/index.ts';
 import { Address, type IRawHeader } from "../../wasm/kaspa";
 import { Encoding, encodeJob } from './templates/jobs/encoding.ts';
@@ -213,7 +213,7 @@ export default class Stratum extends EventEmitter {
             if (DEBUG) this.monitoring.debug(`Stratum: Job not found - Address: ${address}, Worker Name: ${name}`);
             metrics.updateGaugeInc(jobsNotFound, [name, address]);
             response.result = false;
-            response.error = errors["JOB_NOT_FOUND"];
+            response.error = new StratumError('job-not-found').toDump()
             return response;
           } else {
             const minerId = name;
@@ -245,15 +245,15 @@ export default class Stratum extends EventEmitter {
               switch (err.message) {
                 case 'Duplicate share':
                   this.monitoring.debug("DUPLICATE_SHARE");
-                  response.error = errors['DUPLICATE_SHARE'];
+                  response.error = new StratumError('duplicate-share').toDump();
                   break;
                 case 'Stale header':
                   this.monitoring.debug("Stale Header : JOB_NOT_FOUND");
-                  response.error = errors['JOB_NOT_FOUND'];
+                  response.error = new StratumError('job-not-found').toDump();
                   break;
                 case 'Invalid share':
                   this.monitoring.debug("LOW_DIFFICULTY_SHARE");
-                  response.error = errors['LOW_DIFFICULTY_SHARE'];
+                  response.error = new StratumError('low-difficulty-share').toDump();
                   break;
                 default:
                   throw err;
@@ -265,7 +265,7 @@ export default class Stratum extends EventEmitter {
         }
 
         default:
-          throw errors['UNKNOWN'];
+          throw new StratumError('unknown');
       }
       return response;
     } finally {

@@ -1,5 +1,5 @@
 import type { Socket, TCPSocketListener } from 'bun'
-import { parseMessage, type Request, type Response } from './protocol'
+import { parseMessage, StratumError, type Request, type Response } from './protocol'
 import { Encoding } from '../templates/jobs/encoding'
 import Monitoring from '../../monitoring'
 import { AsicType } from '..'
@@ -66,10 +66,24 @@ export default class Server {
       if (message) {
         this.onMessage(socket, message).then((response) => {
           socket.write(JSON.stringify(response) + '\n')
-        }).catch((err) => {
-          return socket.end()
+        }).catch((error) => {
+          let response: Response = {
+            id: message.id,
+            result: false,
+            error: new StratumError("unknown").toDump()
+          }
+
+          if (error instanceof StratumError) {
+            response.error = error.toDump()
+            socket.write(JSON.stringify(response) + '\n')
+          } else if (error instanceof Error) {
+            response.error![1] = error.message
+            this.monitoring.error(`server: Ending socket : ${error.message}`);
+            return socket.end(JSON.stringify(response))  
+          } else throw error 
         })
       } else {
+        this.monitoring.error(`server: Ending socket`);  
         socket.end()
       }
     }
@@ -77,6 +91,7 @@ export default class Server {
     socket.data.cachedBytes = messages[0]
 
     if (socket.data.cachedBytes.length > 512) {
+      this.monitoring.error(`server: Ending socket as socket.data.cachedBytes.length > 512`);
       socket.end()
     }
   }
