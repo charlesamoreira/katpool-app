@@ -78,10 +78,12 @@ export default class Server {
             socket.write(JSON.stringify(response) + '\n')
           } else if (error instanceof Error) {
             response.error![1] = error.message
+            this.monitoring.error(`server: Ending socket : ${error.message}`);
             return socket.end(JSON.stringify(response))  
           } else throw error 
         })
       } else {
+        this.monitoring.error(`server: Ending socket`);  
         socket.end()
       }
     }
@@ -89,6 +91,7 @@ export default class Server {
     socket.data.cachedBytes = messages[0]
 
     if (socket.data.cachedBytes.length > 512) {
+      this.monitoring.error(`server: Ending socket as socket.data.cachedBytes.length > 512`);
       socket.end()
     }
   }
