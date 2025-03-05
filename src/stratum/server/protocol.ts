@@ -14,6 +14,36 @@ export type Request<M extends keyof ResponseMappings = keyof ResponseMappings> =
   [ K in M]: RequestMessage<K>
 }[ M ]
 
+export enum ErrorCodes {
+  "unknown" = 20,
+  "job-not-found" = 21,
+  "duplicate-share" = 22,
+  "low-difficulty-share" = 23,
+  "unauthorized-worker" = 24,
+  "not-subscribed" = 25,
+}
+
+export class StratumError extends Error {
+  code: number
+
+  constructor(code: keyof typeof ErrorCodes) {
+    super(code)
+    this.code = ErrorCodes[code]
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, StratumError)
+    }
+  }
+
+  toDump (): [ number, string, string | null ] { // TODO: error type
+    return [ 
+      this.code,
+      this.message,
+      this.stack ?? null 
+    ]
+  }
+}
+
 export interface ResponseMappings {
   "mining.subscribe": [ boolean| null, string, number? ] // !bitmain - EthereumStratum/1.0.0
   'mining.authorize': boolean // TRUE
@@ -30,15 +60,6 @@ export interface Response<M extends keyof RequestMappings = keyof RequestMapping
   id: number
   result: ResponseMappings[M] | null
   error: null | Error
-}
-
-export const errors: { [key: string]: Error } = {
-  "UNKNOWN": [20, 'Unknown problem', null],
-  "JOB_NOT_FOUND": [21, 'Job not found', null],
-  "DUPLICATE_SHARE": [22, 'Duplicate share submitted', null],
-  "LOW_DIFFICULTY_SHARE": [23, 'Invalid difficulty', null],
-  "UNAUTHORIZED_WORKER": [24, 'Unauthorized', null],
-  "NOT_SUBSCRIBED": [25, 'Not subscribed', null],
 }
 
 export interface EventMappings {
