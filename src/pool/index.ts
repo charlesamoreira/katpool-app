@@ -77,15 +77,15 @@ export default class Pool {
     this.monitoring.log(`Pool: Pool is active on port ${this.stratum.server.socket.port}.`);
   }
 
-  private async revenuize(amount: bigint) {
+  private async revenuize(amount: bigint, txnId: string) {
     const address = this.treasury.address; // Use the treasury address
     const minerId = 'pool'; // Use a fixed ID for the pool itself
     await this.database.addBalance(minerId, address, amount, 0n); // Use the total amount as the share
-    this.monitoring.log(`Pool: Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase.`);
+    this.monitoring.log(`Pool: Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase for txnId: ${txnId}.`);
   }
 
   private async allocate(minerReward: bigint, poolFee: bigint, txnId: string, daaScore: string) {
-    this.monitoring.debug(`Pool: Starting allocation. Miner Reward: ${minerReward}, Pool Fee: ${poolFee}`);
+    this.monitoring.debug(`Pool: Starting allocation. Miner Reward: ${minerReward}, Pool Fee: ${poolFee}, txnId: ${txnId}`);
     const works = new Map<string, { minerId: string, difficulty: number }>();
     let totalWork = 0;
     const walletHashrateMap = new Map<string, number>();
@@ -155,12 +155,12 @@ export default class Pool {
       this.pushMetrics.updateMinerRewardGauge(address, work.minerId, block_hash, daaScoreF);
 
       if (DEBUG) {
-        this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}`);
+        this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} , rebate in KAS ${sompiToKaspaStringWithSuffix(nacho_rebate_kas, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}, txnId: ${txnId}`);
       }
     }
 
     // Handle pool fee revenue
-    if (works.size > 0 && poolFee > 0) this.revenuize(poolFee);
+    if (works.size > 0 && poolFee > 0) this.revenuize(poolFee, txnId);
   }
 
   handleError(error: unknown, context: string) {

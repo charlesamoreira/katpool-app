@@ -60,7 +60,7 @@ export default class Treasury extends EventEmitter {
         const reward = e.data.value
         const txnId = e.data.id
         const daaScore = e.data.blockDaaScore
-        this.monitoring.log(`Treasury: Maturity event received. Reward: ${reward}, Event timestamp: ${Date.now()}`);
+        this.monitoring.log(`Treasury: Maturity event received. Reward: ${reward}, Event timestamp: ${Date.now()}, TxnId: ${txnId}`);
         const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
         this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
         this.emit('coinbase', reward - poolFee, poolFee, txnId, daaScore)
