@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS block_details (
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
+DO $$ BEGIN
+    CREATE TYPE status_enum AS ENUM ('PENDING', 'FAILED', 'COMPLETED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS pending_krc20_transfers (
     id SERIAL PRIMARY KEY,
     first_txn_id VARCHAR(255) UNIQUE NOT NULL,
