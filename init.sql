@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS pending_krc20_transfers (
     nacho_amount BIGINT NOT NULL,
     address VARCHAR(255) NOT NULL,
     p2sh_address VARCHAR(255) NOT NULL,
-    nacho_transfer_status ENUM('PENDING', 'FAILED', 'COMPLETED') DEFAULT 'PENDING',
-    db_entry_status ENUM('PENDING', 'FAILED', 'COMPLETED') DEFAULT 'PENDING',
+    nacho_transfer_status status_enum DEFAULT 'PENDING',
+    db_entry_status status_enum DEFAULT 'PENDING',
     timestamp TIMESTAMP DEFAULT NOW()
 );
