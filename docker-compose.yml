@@ -177,6 +177,7 @@ services:
       - postgres
     volumes:
       - ./config:/app/config
+      - /root/docker_deployment/data/:/app/data/
     networks:
       - backend
     env_file:
