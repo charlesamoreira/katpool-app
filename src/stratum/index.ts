@@ -80,6 +80,7 @@ export default class Stratum extends EventEmitter {
     });
     this.subscriptors.forEach((socket) => {
       if (socket.readyState === "closed") {
+        this.monitoring.debug(`Stratum: Deleting socket on closed stats for: ${socket.data.workers}`)
         this.subscriptors.delete(socket);
       } else {      
         socket.data.workers.forEach((worker, _) => {
@@ -156,7 +157,7 @@ export default class Stratum extends EventEmitter {
           }
           
           const minerData = this.sharesManager.getMiners().get(worker.address)!;
-          if (!minerData.workerStats.has(worker.name)) {
+          // if (!minerData.workerStats.has(worker.name)) {
             minerData.workerStats.set(worker.name, {
               blocksFound: 0,
               sharesFound: 0,
@@ -174,7 +175,7 @@ export default class Stratum extends EventEmitter {
               hashrate: 0,
               asicType: socket.data.asicType
             });
-          }
+          // }
 
           // Set extranonce
           let extraNonceParams: any[] = [socket.data.extraNonce];
