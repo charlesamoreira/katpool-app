@@ -80,6 +80,7 @@ export default class Stratum extends EventEmitter {
     });
     this.subscriptors.forEach((socket) => {
       if (socket.readyState === "closed") {
+        this.monitoring.debug(`Stratum: Deleting socket on closed stats for: ${socket.data.workers}`)
         this.subscriptors.delete(socket);
       } else {      
         socket.data.workers.forEach((worker, _) => {
@@ -139,11 +140,11 @@ export default class Stratum extends EventEmitter {
         }
         case 'mining.authorize': {
           const [address, name] = request.params[0].split('.');
-          if (!Address.validate(address)) throw Error('Invalid address');
-          if (!name) throw Error('Worker name is not set.');
+          if (!Address.validate(address)) throw Error(`Invalid address, parsed address: ${address}, request: ${request.params[0]}`);
+          if (!name) throw Error(`Worker name is not set. ${request.params[0]}`);
 
           const worker: Worker = { address, name: name };
-          if (socket.data.workers.has(worker.name)) throw Error('Worker with duplicate name');
+          if (socket.data.workers.has(worker.name)) throw Error(`Worker with duplicate name: ${name}`);
           const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
           socket.data.workers.set(worker.name, worker);
           sockets.add(socket);
@@ -156,7 +157,7 @@ export default class Stratum extends EventEmitter {
           }
           
           const minerData = this.sharesManager.getMiners().get(worker.address)!;
-          if (!minerData.workerStats.has(worker.name)) {
+          // if (!minerData.workerStats.has(worker.name)) {
             minerData.workerStats.set(worker.name, {
               blocksFound: 0,
               sharesFound: 0,
@@ -174,7 +175,7 @@ export default class Stratum extends EventEmitter {
               hashrate: 0,
               asicType: socket.data.asicType
             });
-          }
+          // }
 
           // Set extranonce
           let extraNonceParams: any[] = [socket.data.extraNonce];
@@ -206,7 +207,7 @@ export default class Stratum extends EventEmitter {
           if (DEBUG) this.monitoring.debug(`Stratum: Checking worker data on socket for : ${name}`);
           if (!worker || worker.address !== address) {
             if (DEBUG) this.monitoring.debug(`Stratum: Mismatching worker details - Address: ${address}, Worker Name: ${name}`);
-            throw Error('Mismatching worker details');
+            throw Error(`Mismatching worker details request: ${request.params[0]}`);
           }
           const hash = this.templates.getHash(request.params[1]);
           if (!hash) {

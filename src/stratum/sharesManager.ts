@@ -51,6 +51,8 @@ const varDiffThreadSleep: number = 10
 const varDiffRejectionRateThreshold: number = 20 // If rejection rate exceeds threshold, set difficulty based on hash rate.
 const zeroDateMillS: number = new Date(0).getMilliseconds()
 
+const statsInterval = 600000; // 10 minutes
+
 type Contribution = {
   address: string;
   difficulty: number;
@@ -194,7 +196,29 @@ export class SharesManager {
 
           // Update worker's hashrate in workerStats
           stats.hashrate = workerRate;
-          const status = Date.now() - stats.lastShare <= 600000 ? Math.floor(stats.lastShare / 1000) : 0;
+          const status = this.checkWorkerStatus(stats);
+          try {
+            if (status === 0) {
+              this.monitoring.debug(`\nSharesManager: MinerData before - `);
+              this.logData(minerData)
+              this.monitoring.debug(`SharesManager: Status is inactive for worker: ${workerName}, address: ${address}`)
+              minerData.workerStats.delete(workerName)
+              this.monitoring.debug(`SharesManager: Deleted workerstats: ${workerName}, address: ${address}`)
+              let socket : Socket<any>;
+              minerData.sockets.forEach(skt => {
+                if (skt.data.workers.has(workerName)) {
+                  socket = skt;
+                  this.monitoring.debug(`SharesManager: Socket found for deletion: ${workerName}, address: ${address}`)
+                }
+              });
+              minerData.sockets.delete(socket!);
+              this.monitoring.debug(`SharesManager: Deleted socket for : ${workerName}, address: ${address}`)
+              this.monitoring.debug(`\nSharesManager: MinerData after - `);
+              this.logData(minerData); 
+            }
+          } catch (error) {
+            this.monitoring.error(`SharesManager: Could not delete inactive worker: ${workerName}, address: ${address}`)
+          }
           metrics.updateGaugeValue(activeMinerGuage, [workerName, address, stats.asicType], status);
         });
         metrics.updateGaugeValue(minerHashRateGauge, [address], rate);
@@ -227,7 +251,7 @@ export class SharesManager {
       }, 0).toString().padEnd(12)} | ${(Date.now() - start) / 1000}s`;
       str += "\n===============================================================================\n";
       this.monitoring.log(str);
-    }, 600000); // 10 minutes
+    }, statsInterval); // 10 minutes
   }
 
   getMiners() {
@@ -307,6 +331,12 @@ export class SharesManager {
         for (const [workerName, workerStats] of minerData.workerStats) {
           if (!workerStats || !workerStats.workerName) {
             if (DEBUG) this.monitoring.debug(`SharesManager: Invalid worker stats or worker name for worker ${workerName}`);
+            continue;
+          }
+
+          const status = this.checkWorkerStatus(workerStats);
+          if (status === 0) {
+            this.monitoring.debug(`SharesManager: Skipping for inactive worker.: ${workerName}`);
             continue;
           }
 
@@ -456,5 +486,15 @@ export class SharesManager {
     }
     const stats = this.getOrCreateWorkerStats(worker.name, minerData);
     return stats.minDiff;
+  }
+
+  checkWorkerStatus(stats: WorkerStats) {
+    return Date.now() - stats.lastShare <= statsInterval ? Math.floor(stats.lastShare / 1000) : 0;
+  }
+
+  logData(minerData: MinerData) {
+    minerData.workerStats.forEach((stats, workerName) => {
+      this.monitoring.log(`ShareManager: stats: ${JSON.stringify(stats)}, name: ${workerName}`)
+    });
   }
 }
