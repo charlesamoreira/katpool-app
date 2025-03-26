@@ -461,10 +461,11 @@ export class SharesManager {
       } else if (stats.hashrate >= OneGH * 15001 && stats.hashrate <= OneGH * 21000) {
         newMinDiff = 32768 // Bitmain KS5/Pro
       }
+      this.monitoring.debug(`SharesManager: varDiffRejectionRateThreshold - worker name: ${stats.workerName}, diff: ${stats.minDiff}, newDiff: ${newMinDiff}`);
     }
 
     if (newMinDiff != previousMinDiff) {
-      this.monitoring.log(`updating vardiff to ${newMinDiff} for client ${stats.workerName}`)
+      this.monitoring.log(`SharesManager:  updating vardiff to ${newMinDiff} for client ${stats.workerName}`)
       stats.varDiffStartTime = zeroDateMillS
       stats.varDiffWindow = 0
       stats.minDiff = newMinDiff

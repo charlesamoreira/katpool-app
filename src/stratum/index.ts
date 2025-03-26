@@ -117,7 +117,7 @@ export default class Stratum extends EventEmitter {
       switch (request.method) {
         case 'mining.subscribe': {
           if (this.subscriptors.has(socket)) throw Error('Already subscribed');
-          const minerType = request.params[0].toLowerCase();
+          const minerType = request.params[0]?.toLowerCase() ?? ''; 
           response.result = [true, "EthereumStratum/1.0.0"]
 
           // Format extranonce as a hexadecimal string with padding
@@ -206,8 +206,8 @@ export default class Stratum extends EventEmitter {
           const worker = socket.data.workers.get(name);
           if (DEBUG) this.monitoring.debug(`Stratum: Checking worker data on socket for : ${name}`);
           if (!worker || worker.address !== address) {
-            if (DEBUG) this.monitoring.debug(`Stratum: Mismatching worker details - Address: ${address}, Worker Name: ${name}`);
-            throw Error(`Mismatching worker details request: ${request.params[0]}`);
+            if (DEBUG) this.monitoring.debug(`Stratum: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`);
+            throw Error(`Mismatching worker details request: worker.Addr: ${worker?.address}, ${request.params[0]}`);
           }
           const hash = this.templates.getHash(request.params[1]);
           if (!hash) {
