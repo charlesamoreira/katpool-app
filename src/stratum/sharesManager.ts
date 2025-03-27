@@ -67,9 +67,13 @@ export class SharesManager {
   private monitoring: Monitoring;
   private shareWindow: Denque<Contribution>;
   private lastAllocationTime: number;
+  private stratumMinDiff: number;
+  private stratumMaxDiff: number;
 
-  constructor(poolAddress: string) {
+  constructor(poolAddress: string, stratumMinDiff: number, stratumMaxDiff: number) {
     this.poolAddress = poolAddress;
+    this.stratumMinDiff = stratumMinDiff;
+    this.stratumMaxDiff = stratumMaxDiff;
     this.monitoring = new Monitoring();
     this.startStatsThread(); // Start the stats logging thread
     this.shareWindow = new Denque();
@@ -434,10 +438,10 @@ export class SharesManager {
       minDiff = Math.pow(2, Math.floor(Math.log2(minDiff)))
     }
 
-    let previousMinDiff = stats.minDiff
-    let minimumDiff = config.stratum.minDiff
+    let previousMinDiff = stats.minDiff;
+    let minimumDiff = this.stratumMinDiff;
 
-    let newMinDiff = Math.max(minimumDiff, Math.min(config.stratum.maxDiff, minDiff))
+    let newMinDiff = Math.max(minimumDiff, Math.min(this.stratumMaxDiff, minDiff))
     if (stats.invalidShares / stats.sharesFound >= varDiffRejectionRateThreshold / 100) {
       const OneGH = Math.pow(10, 9); 
       if (stats.hashrate <= OneGH * 100) {

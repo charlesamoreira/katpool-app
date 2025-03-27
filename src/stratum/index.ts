@@ -38,20 +38,26 @@ export default class Stratum extends EventEmitter {
   sharesManager: SharesManager;
   private minerDataLock = new Mutex();
   private extraNonceSize:number;
+  private clampPow2: boolean;
+  private varDiff: boolean;
+  private extraNonce: number;
 
-  constructor(templates: Templates, port: number, initialDifficulty: number, poolAddress: string, sharesPerMin: number) {
+  constructor(templates: Templates, port: number, initialDifficulty: number, poolAddress: string, sharesPerMin: number, clampPow2: boolean, varDiff: boolean, extraNonce: number, stratumMinDiff: number, stratumMaxDiff: number) {
     super();
     this.monitoring = new Monitoring
-    this.sharesManager = new SharesManager(poolAddress);
+    this.sharesManager = new SharesManager(poolAddress, stratumMinDiff, stratumMaxDiff);
     this.server = new Server(port, initialDifficulty, this.onMessage.bind(this));
     this.difficulty = initialDifficulty;
     this.templates = templates;
+    this.clampPow2 = clampPow2;
+    this.varDiff = varDiff;
+    this.extraNonce = extraNonce;
     this.templates.register((id, hash, timestamp, header) => this.announceTemplate(id, hash, timestamp, header));
     this.monitoring.log(`Stratum: Initialized with difficulty ${this.difficulty}`);
 
     // Start the VarDiff thread
-    const clampPow2 = config.stratum.clampPow2 || true; // Enable clamping difficulty to powers of 2
-    const varDiff = config.stratum.varDiff || false; // Enable variable difficulty
+    clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
+    varDiff = varDiff || false; // Enable variable difficulty
     if (varDiff)
       this.sharesManager.startVardiffThread(sharesPerMin, clampPow2).then(() => {
         this.monitoring.log("VarDiff thread started successfully.");
@@ -60,7 +66,7 @@ export default class Stratum extends EventEmitter {
         this.monitoring.error(`Failed to start VarDiff thread: ${err}`);
       });;
 
-    this.extraNonceSize = Math.min(Number(config.stratum.extraNonceSize), 3 ) || 0;
+    this.extraNonceSize = Math.min(Number(extraNonce), 3 ) || 0;
   }
 
   announceTemplate(id: string, hash: string, timestamp: bigint, header: IRawHeader) {

@@ -7,7 +7,7 @@
   "block_wait_time_seconds": "3",
   "redis_address" : "redis:6379",
   "redis_channel": "NewBlockTemplateChannel",
-  "stratum": {
+  "stratum": [{
     "port": 7777,
     "templates": {
       "cacheSize": 300
@@ -16,10 +16,24 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 64,
     "maxDiff": 131072
   },
+  {
+    "port": 8888,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 4096,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 64,
+    "maxDiff": 131072
+  }
+  ],
   "treasury": {
     "fee": 0.75,
     "nachoRebate": 33

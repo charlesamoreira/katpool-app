@@ -6,7 +6,7 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { PushMetrics, startMetricsServer } from "./src/prometheus";
+import { PushMetrics, startMetricsServer, varDiff } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -81,7 +81,33 @@ sendConfig();
 startMetricsServer();
 
 const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
-const templates = new Templates(rpc, treasury.address, config.stratum.templates.cacheSize);
+// Array to hold multiple pools
+const pools: Pool[] = [];
 
-const stratum = new Stratum(templates, config.stratum.port, config.stratum.difficulty, treasury.address, config.stratum.sharesPerMinute);
-const pool = new Pool(treasury, stratum, stratum.sharesManager);
+for (const stratumConfig of config.stratum) {
+    // Create Templates instance
+    const templates = new Templates(rpc, treasury.address, stratumConfig.templates.cacheSize);
+
+    // Create Stratum instance
+    const stratum = new Stratum(
+        templates, 
+        stratumConfig.port, 
+        stratumConfig.difficulty, 
+        treasury.address, 
+        stratumConfig.sharesPerMinute,
+        stratumConfig.clampPow2,
+        stratumConfig.varDiff,
+        stratumConfig.extraNonceSize,
+        stratumConfig.minDiff,
+        stratumConfig.maxDiff,
+    );
+
+    // Create Pool instance
+    const pool = new Pool(treasury, stratum, stratum.sharesManager);
+
+    // Store the pool for later reference
+    pools.push(pool);
+}
+
+// Now you have an array of `pools` for each stratum configuration
+console.log(`✅ Created ${pools.length} pools.`);
