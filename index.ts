@@ -110,4 +110,4 @@ for (const stratumConfig of config.stratum) {
 }
 
 // Now you have an array of `pools` for each stratum configuration
-console.log(`✅ Created ${pools.length} pools.`);
+monitoring.log(`✅ Created ${pools.length} pools.`);
