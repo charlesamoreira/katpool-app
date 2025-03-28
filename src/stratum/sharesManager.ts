@@ -4,7 +4,7 @@ import { type Worker } from './server';
 import type { RegistryContentType } from 'prom-client';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';
-import { DEBUG } from '../../index';
+import { DEBUG, statsInterval } from '../../index';
 import {
   minerHashRateGauge,
   poolHashRateGauge,
@@ -51,8 +51,6 @@ const varDiffThreadSleep: number = 10
 const varDiffRejectionRateThreshold: number = 20 // If rejection rate exceeds threshold, set difficulty based on hash rate.
 const zeroDateMillS: number = new Date(0).getMilliseconds()
 
-const statsInterval = 600000; // 10 minutes
-
 type Contribution = {
   address: string;
   difficulty: number;
@@ -63,7 +61,7 @@ type Contribution = {
 export class SharesManager {
   private contributions: Map<bigint, Contribution> = new Map();
   private miners: Map<string, MinerData> = new Map();
-  private poolAddress: string;
+  public poolAddress: string;
   private monitoring: Monitoring;
   private shareWindow: Denque<Contribution>;
   private lastAllocationTime: number;
@@ -234,10 +232,6 @@ export class SharesManager {
       lines.sort();
       str += lines.join("\n");
       const rateStr = stringifyHashrate(totalRate);
-      metrics.updateGaugeValue(poolHashRateGauge, ['pool', this.poolAddress], totalRate);
-      if (DEBUG) {
-        this.monitoring.debug(`SharesManager ${this.port}: Total pool hash rate updated to ${rateStr}`);
-      }
 
       const overallStats = Array.from(this.miners.values()).reduce((acc: any, minerData: MinerData) => {
         minerData.workerStats.forEach((stats) => {

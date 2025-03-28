@@ -40,7 +40,7 @@ export default class Pool {
   private stratum: Stratum;
   private database: Database;
   private monitoring: Monitoring;
-  private sharesManager: SharesManager; // Add SharesManager property
+  public sharesManager: SharesManager; // Add SharesManager property
   private pushMetrics: PushMetrics; // Add PushMetrics property
   private lastProcessedTimestamp = 0; // Add timestamp check
   private duplicateEventCount = 0;

@@ -6,10 +6,11 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { PushMetrics, startMetricsServer, varDiff } from "./src/prometheus";
+import { poolHashRateGauge, PushMetrics, startMetricsServer, varDiff } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import { stringifyHashrate } from "./src/stratum/utils";
 
 function shutdown() {
   monitoring.log("\n\nMain: Gracefully shutting down the pool")
@@ -22,6 +23,8 @@ export let DEBUG = 0
 if (process.env.DEBUG == "1") {
   DEBUG = 1;
 }
+
+export const statsInterval = 600000; // 10 minutes
 
 // Send config.json to API server
 async function sendConfig() {
@@ -107,6 +110,26 @@ for (const stratumConfig of config.stratum) {
     // Store the pool for later reference
     pools.push(pool);
 }
+
+// Function to calculate and update pool hash rate
+function calculatePoolHashrate() {
+    let totalRate = 0;
+
+    pools.forEach((pool) => {
+        pool.sharesManager.getMiners().forEach((minerData) => {
+            minerData.workerStats.forEach((stats) => {
+                totalRate += stats.hashrate;
+            });
+        });
+    });
+
+    const rateStr = stringifyHashrate(totalRate);
+    metrics.updateGaugeValue(poolHashRateGauge, ['pool', pools[0].sharesManager.poolAddress], totalRate);
+    monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
+}
+
+// Set interval for subsequent updates
+setInterval(calculatePoolHashrate, statsInterval);
 
 // Now you have an array of `pools` for each stratum configuration
 monitoring.log(`Main: ✅ Created ${pools.length} pools.`);

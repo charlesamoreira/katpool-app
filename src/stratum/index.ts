@@ -59,13 +59,14 @@ export default class Stratum extends EventEmitter {
     // Start the VarDiff thread
     this.clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
     this.varDiff = varDiff || false; // Enable variable difficulty
-    if (this.varDiff)
+    if (this.varDiff) {
       this.sharesManager.startVardiffThread(sharesPerMin, this.clampPow2).then(() => {
         this.monitoring.log(`Stratum ${this.port}: VarDiff thread started successfully.`);
       })
       .catch((err) => {
         this.monitoring.error(`Stratum ${this.port}: Failed to start VarDiff thread: ${err}`);
       });;
+    }
 
     this.extraNonceSize = Math.min(Number(this.extraNonce), 3 ) || 0;
   }
@@ -91,12 +92,14 @@ export default class Stratum extends EventEmitter {
         this.subscriptors.delete(socket);
       } else {      
         socket.data.workers.forEach((worker, _) => {
-          let varDiff = this.sharesManager.getClientVardiff(worker)
-				  if (varDiff != socket.data.difficulty && varDiff != 0) {
-            this.monitoring.log(`Stratum ${this.port}: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
-            this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
-            this.reflectDifficulty(socket, worker.name);
-            this.sharesManager.startClientVardiff(worker);
+          if (this.varDiff) {
+            let varDiff = this.sharesManager.getClientVardiff(worker)
+            if (varDiff != socket.data.difficulty && varDiff != 0) {
+              this.monitoring.log(`Stratum ${this.port}: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
+              this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
+              this.reflectDifficulty(socket, worker.name);
+              this.sharesManager.startClientVardiff(worker);
+            }
           }
         });
 
