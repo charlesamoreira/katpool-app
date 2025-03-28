@@ -41,18 +41,18 @@ export default class Treasury extends EventEmitter {
     })
 
     this.processor.addEventListener('maturity', async (e) => {
-      // this.monitoring.log(`Maturity event data : ${JsonBig.stringify(e)}`)
+      // this.monitoring.log(`Treasury: Maturity event data : ${JsonBig.stringify(e)}`)
       if (e?.data?.type === 'incoming') {
         // @ts-ignore
         if (!e?.data?.data?.utxoEntries?.some(element => element?.isCoinbase)) {
-          this.monitoring.log(`Not coinbase event. Skipping`)
+          this.monitoring.log(`Treasury: Not coinbase event. Skipping`)
           return
         }
         const { timestamps } = await this.rpc.getDaaScoreTimestampEstimate({
           daaScores: [e.data.blockDaaScore]
         })
         if (timestamps[0] < startTime) {
-          this.monitoring.log(`Earlier event detected. Skipping`)
+          this.monitoring.log(`Treasury: Earlier event detected. Skipping`)
           return
         }
 

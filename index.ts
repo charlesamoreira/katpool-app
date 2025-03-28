@@ -12,7 +12,7 @@ import fs from 'fs';
 import path from 'path';
 
 function shutdown() {
-  monitoring.log("\n\n Gracefully shutting down the pool")
+  monitoring.log("\n\nMain: Gracefully shutting down the pool")
   process.exit();
 }
 
@@ -61,7 +61,7 @@ const rpc = new RpcClient({
 try{  
   await rpc.connect();
 } catch(err) {
-  monitoring.error(`Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
+  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
 }
 
 monitoring.log(`Main: RPC connection started`)
@@ -86,12 +86,11 @@ const pools: Pool[] = [];
 
 for (const stratumConfig of config.stratum) {
     // Create Templates instance
-    const templates = new Templates(rpc, treasury.address, stratumConfig.templates.cacheSize);
+    const templates = new Templates(rpc, treasury.address, stratumConfig.templates.cacheSize, stratumConfig.port);
 
     // Create Stratum instance
     const stratum = new Stratum(
         templates, 
-        stratumConfig.port, 
         stratumConfig.difficulty, 
         treasury.address, 
         stratumConfig.sharesPerMinute,
@@ -110,4 +109,4 @@ for (const stratumConfig of config.stratum) {
 }
 
 // Now you have an array of `pools` for each stratum configuration
-monitoring.log(`✅ Created ${pools.length} pools.`);
+monitoring.log(`Main: ✅ Created ${pools.length} pools.`);
