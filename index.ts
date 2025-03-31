@@ -6,7 +6,7 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { poolHashRateGauge, PushMetrics, startMetricsServer, varDiff } from "./src/prometheus";
+import { poolHashRateGauge, PushMetrics, startMetricsServer } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
