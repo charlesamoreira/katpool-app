@@ -145,6 +145,12 @@ export default class Stratum extends EventEmitter {
 
   // Function to extract and validate difficulty
   parseDifficulty(input: string): number | null {
+    const validPattern = /^(d=|diff=)?\d+$/i;
+
+    if (!validPattern.test(input)) {
+      return null;  // Invalid pattern, return null
+    }
+
     const match = input.match(/(\d+)/);
     if (match) {
         const diff = Number(match[0]);
