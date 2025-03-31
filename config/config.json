@@ -16,7 +16,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": false,
+    "varDiff": true,
     "minDiff": 64,
     "maxDiff": 131072
   },
@@ -29,7 +29,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 256,
     "maxDiff": 512
   },
@@ -42,7 +42,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 512,
     "maxDiff": 1024
   },
@@ -55,7 +55,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 2048,
     "maxDiff": 4096
   },
@@ -68,7 +68,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 4096,
     "maxDiff": 8192
   },
@@ -81,7 +81,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 16384,
     "maxDiff": 32768
   },
@@ -94,7 +94,7 @@
     "sharesPerMinute": 10,
     "extraNonceSize": 2, 
     "clampPow2": true,
-    "varDiff": true,
+    "varDiff": false,
     "minDiff": 32768,
     "maxDiff": 65536
   }
