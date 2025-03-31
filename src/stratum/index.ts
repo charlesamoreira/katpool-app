@@ -14,6 +14,7 @@ import { Mutex } from 'async-mutex';
 import { metrics } from '../../index';
 import Denque from 'denque';
 import JsonBig from 'json-bigint';
+import config from "../../config/config.json";
 
 const bitMainRegex = new RegExp(".*(GodMiner).*", "i")
 const iceRiverRegex = new RegExp(".*(IceRiverMiner).*", "i")
@@ -25,6 +26,10 @@ export enum AsicType {
   GoldShell = "GoldShell",
   Unknown = ""
 }
+
+const MIN_DIFF = config.stratum[0].minDiff || 64;
+const MAX_DIFF = config.stratum[0].maxDiff || 131072;
+const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
 
 const workerCounters = new Map<string, number>();
 
@@ -116,6 +121,61 @@ export default class Stratum extends EventEmitter {
     socket.write(JSON.stringify(event) + '\n');
   }
 
+  // Function to check if a number is power of 2
+  isPowerOf2(num: number): boolean {
+    return (num & (num - 1)) === 0 && num > 0;
+  };
+
+  // Function to round to the nearest power of 2
+  roundToNearestPowerOf2(num: number): number {
+    if (num < MIN_DIFF) return MIN_DIFF;
+    if (num > MAX_DIFF) return MAX_DIFF;
+
+    let pow = 1;
+    while (pow < num) {
+        pow *= 2;
+    }
+
+    const lower = pow / 2;
+    const upper = pow;
+
+    // Choose the nearest power of 2
+    return (num - lower < upper - num) ? lower : upper;
+  };
+
+  // Function to extract and validate difficulty
+  parseDifficulty(input: string): number | null {
+    const match = input.match(/(\d+)/);
+    if (match) {
+        const diff = Number(match[0]);
+        if (!isNaN(diff)) {
+            return diff;
+        }
+    }
+    return null;
+  };
+
+  // Function to apply clamping logic
+  getDifficulty(input: string): number {
+    const diff = this.parseDifficulty(input);
+
+    if (diff === null) {
+        this.monitoring.error(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
+        return DEFAULT_DIFF;
+    }
+
+    // Clamp to range
+    const clampedDiff = Math.min(Math.max(diff, MIN_DIFF), MAX_DIFF);
+
+    // Ensure power-of-2 clamping
+    const finalDiff = this.isPowerOf2(clampedDiff) 
+        ? clampedDiff 
+        : this.roundToNearestPowerOf2(clampedDiff);
+
+    this.monitoring.log(`Stratum: User requested: ${diff}, applied: ${finalDiff}`);
+    return finalDiff;
+  };
+
   private async onMessage(socket: Socket<Miner>, request: Request) {
     const release = await this.minerDataLock.acquire();
     try {
@@ -124,6 +184,7 @@ export default class Stratum extends EventEmitter {
         result: true,
         error: null
       };
+      let userDiff = 0;
       switch (request.method) {
         case 'mining.subscribe': {
           if (this.subscriptors.has(socket)) throw Error('Already subscribed');
@@ -150,6 +211,14 @@ export default class Stratum extends EventEmitter {
         }
         case 'mining.authorize': {
           const [address, name] = request.params[0].split('.');
+          let userDiff = this.difficulty; // Defaults to the ports default difficulty
+          if (this.port === 8888) { // Only when they connect to this port, allow user defined diff
+            userDiff = this.getDifficulty(request.params[1]);
+            this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${request.params[1]}`);
+            if (userDiff < MIN_DIFF && userDiff > MAX_DIFF) userDiff = DEFAULT_DIFF;
+            this.monitoring.log(`Stratum: Extracted user diff value: ${userDiff}`);  
+          } 
+
           if (!Address.validate(address)) throw Error(`Invalid address, parsed address: ${address}, request: ${request.params[0]}`);
           if (!name) throw Error(`Worker name is not set. ${request.params[0]}`);
 
@@ -180,7 +249,7 @@ export default class Stratum extends EventEmitter {
               varDiffStartTime: Date.now(),
               varDiffSharesFound: 0,
               varDiffWindow: 0,
-              minDiff: this.difficulty,
+              minDiff: userDiff,
               recentShares: new Denque<{ timestamp: number, difficulty: number, workerName: string }>(),
               hashrate: 0,
               asicType: socket.data.asicType
