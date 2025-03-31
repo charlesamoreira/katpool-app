@@ -128,8 +128,7 @@ export default class Stratum extends EventEmitter {
 
   // Function to round to the nearest power of 2
   roundToNearestPowerOf2(num: number): number {
-    if (num < MIN_DIFF) return MIN_DIFF;
-    if (num > MAX_DIFF) return MAX_DIFF;
+    if (num < MIN_DIFF || num > MAX_DIFF) return DEFAULT_DIFF;
 
     let pow = 1;
     while (pow < num) {
@@ -165,7 +164,7 @@ export default class Stratum extends EventEmitter {
   getDifficulty(input: string): number {
     const diff = this.parseDifficulty(input);
 
-    if (diff === null) {
+    if (diff === null || diff < MIN_DIFF || diff > MAX_DIFF) {
         this.monitoring.error(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
         return DEFAULT_DIFF;
     }
@@ -221,7 +220,6 @@ export default class Stratum extends EventEmitter {
           if (this.port === 8888) { // Only when they connect to this port, allow user defined diff
             userDiff = this.getDifficulty(request.params[1]);
             this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${request.params[1]}`);
-            if (userDiff < MIN_DIFF && userDiff > MAX_DIFF) userDiff = DEFAULT_DIFF;
             this.monitoring.log(`Stratum: Extracted user diff value: ${userDiff}`);  
           } 
 
