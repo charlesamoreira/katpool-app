@@ -21,7 +21,6 @@ import { metrics } from '../../index';
 // Fix the import statement
 import Denque from 'denque';
 import { Encoding } from './templates/jobs/encoding';
-import config from '../../config/config.json'
 import { AsicType } from '.';
 
 export interface WorkerStats {
@@ -40,6 +39,7 @@ export interface WorkerStats {
   recentShares: Denque<{ timestamp: number, difficulty: number}>;
   hashrate: number; // Added hashrate property
   asicType: AsicType;
+  varDiffEnabled: boolean;
 }
 
 type MinerData = {
@@ -82,6 +82,11 @@ export class SharesManager {
 
   getOrCreateWorkerStats(workerName: string, minerData: MinerData): WorkerStats {
     if (!minerData.workerStats.has(workerName)) {
+      let varDiffStatus = false;
+      if (this.port === 8888) {
+        varDiffStatus = true; 
+        this.monitoring.debug(`SharesManager ${this.port}: New worker stats created for ${workerName}, defaulting to enabled var-diff due to connection to the port 8888.`);
+      }
       const workerStats: WorkerStats = {
         blocksFound: 0,
         sharesFound: 0,
@@ -98,6 +103,7 @@ export class SharesManager {
         recentShares: new Denque<{ timestamp: number, difficulty: number, workerName: string }>(),
         hashrate: 0,
         asicType: AsicType.Unknown,
+        varDiffEnabled: varDiffStatus
       };
       minerData.workerStats.set(workerName, workerStats);
       if (DEBUG) this.monitoring.debug(`SharesManager ${this.port}: Created new worker stats for ${workerName}`);
@@ -334,9 +340,14 @@ export class SharesManager {
             continue;
           }
 
+          if (!workerStats.varDiffEnabled) {
+            this.monitoring.debug(`SharesManager ${this.port}: Skipping var diff for user input diff : ${workerName}`);
+            continue;
+          }
+
           const status = this.checkWorkerStatus(workerStats);
           if (status === 0) {
-            this.monitoring.debug(`SharesManager ${this.port}: Skipping for inactive worker.: ${workerName}`);
+            this.monitoring.debug(`SharesManager ${this.port}: Skipping var diff for inactive worker.: ${workerName}`);
             continue;
           }
 

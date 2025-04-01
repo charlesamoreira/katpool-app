@@ -98,12 +98,21 @@ export default class Stratum extends EventEmitter {
       } else {      
         socket.data.workers.forEach((worker, _) => {
           if (this.varDiff) {
-            let varDiff = this.sharesManager.getClientVardiff(worker)
-            if (varDiff != socket.data.difficulty && varDiff != 0) {
-              this.monitoring.log(`Stratum ${this.port}: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
-              this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
-              this.reflectDifficulty(socket, worker.name);
-              this.sharesManager.startClientVardiff(worker);
+            const workerStats = this.sharesManager.getMiners().get(worker.address)?.workerStats?.get(worker.name) ?? null;
+            let check = true;
+            if (workerStats) {
+              check = workerStats.varDiffEnabled;
+            } else {
+              this.monitoring.log(`Worker stat not found for ${worker.name}`);
+            }
+            if (check) {
+              let varDiff = this.sharesManager.getClientVardiff(worker)
+              if (varDiff != socket.data.difficulty && varDiff != 0) {
+                this.monitoring.log(`Stratum ${this.port}: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
+                this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
+                this.reflectDifficulty(socket, worker.name);
+                this.sharesManager.startClientVardiff(worker);
+              }
             }
           }
         });
@@ -166,7 +175,7 @@ export default class Stratum extends EventEmitter {
 
     if (diff === null || diff < MIN_DIFF || diff > MAX_DIFF) {
         this.monitoring.error(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
-        return DEFAULT_DIFF;
+        return -1;
     }
 
     // Clamp to range
@@ -215,11 +224,17 @@ export default class Stratum extends EventEmitter {
           break;
         }
         case 'mining.authorize': {
+          let varDiffStatus = false;
           const [address, name] = request.params[0].split('.');
           let userDiff = this.difficulty; // Defaults to the ports default difficulty
-          if (this.port === 8888) { // Only when they connect to this port, allow user defined diff
-            userDiff = this.getDifficulty(request.params[1]);
-            this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${request.params[1]}`);
+          const userDiffInput = request.params[1];
+          if (this.port === 8888 && (userDiffInput != '' || /\d/.test(userDiffInput))) { // Only when they connect to this port, allow user defined diff
+            userDiff = this.getDifficulty(userDiffInput);
+            if (userDiff == -1) { // Incorrectly set difficulty.
+              userDiff = DEFAULT_DIFF;
+              varDiffStatus = true;
+            } 
+            this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${userDiffInput}`);
             this.monitoring.log(`Stratum: Extracted user diff value: ${userDiff}`);  
           } 
 
@@ -256,7 +271,8 @@ export default class Stratum extends EventEmitter {
               minDiff: userDiff,
               recentShares: new Denque<{ timestamp: number, difficulty: number, workerName: string }>(),
               hashrate: 0,
-              asicType: socket.data.asicType
+              asicType: socket.data.asicType,
+              varDiffEnabled: varDiffStatus,
             });
           // }
 
