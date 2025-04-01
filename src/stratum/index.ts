@@ -31,8 +31,6 @@ const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;
 const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
 
-const workerCounters = new Map<string, number>();
-
 export default class Stratum extends EventEmitter {
   server: Server;
   private templates: Templates;
@@ -51,7 +49,7 @@ export default class Stratum extends EventEmitter {
     super();
     this.monitoring = new Monitoring
     this.port = templates.port;
-    this.sharesManager = new SharesManager(poolAddress, stratumMinDiff, stratumMaxDiff, templates.port);
+    this.sharesManager = new SharesManager(poolAddress, initialDifficulty ,stratumMinDiff, stratumMaxDiff, templates.port);
     this.server = new Server(templates.port, initialDifficulty, this.onMessage.bind(this));
     this.difficulty = initialDifficulty;
     this.templates = templates;
@@ -198,7 +196,6 @@ export default class Stratum extends EventEmitter {
         result: true,
         error: null
       };
-      let userDiff = 0;
       switch (request.method) {
         case 'mining.subscribe': {
           if (this.subscriptors.has(socket)) throw Error('Already subscribed');

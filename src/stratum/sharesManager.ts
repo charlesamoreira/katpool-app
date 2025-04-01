@@ -67,9 +67,10 @@ export class SharesManager {
   private lastAllocationTime: number;
   private stratumMinDiff: number;
   private stratumMaxDiff: number;
+  private stratumInitDiff: number;
   private port: number;
 
-  constructor(poolAddress: string, stratumMinDiff: number, stratumMaxDiff: number, port: number) {
+  constructor(poolAddress: string, stratumInitDiff: number, stratumMinDiff: number, stratumMaxDiff: number, port: number) {
     this.poolAddress = poolAddress;
     this.stratumMinDiff = stratumMinDiff;
     this.stratumMaxDiff = stratumMaxDiff;
@@ -77,6 +78,7 @@ export class SharesManager {
     this.startStatsThread(); // Start the stats logging thread
     this.shareWindow = new Denque();
     this.lastAllocationTime = Date.now();
+    this.stratumInitDiff = stratumInitDiff;
     this.port = port;
   }
 
@@ -99,7 +101,7 @@ export class SharesManager {
         varDiffStartTime: Date.now(),
         varDiffSharesFound: 0,
         varDiffWindow: 0,
-        minDiff: 128, // Initial difficulty
+        minDiff: this.stratumInitDiff, // Initial difficulty
         recentShares: new Denque<{ timestamp: number, difficulty: number, workerName: string }>(),
         hashrate: 0,
         asicType: AsicType.Unknown,
