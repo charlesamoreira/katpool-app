@@ -103,7 +103,7 @@ export default class Stratum extends EventEmitter {
             if (workerStats) {
               check = workerStats.varDiffEnabled;
             } else {
-              this.monitoring.log(`Worker stat not found for ${worker.name}`);
+              this.monitoring.log(`Stratum ${this.port}: Worker stat not found for ${worker.name}`);
             }
             if (check) {
               let varDiff = this.sharesManager.getClientVardiff(worker)
