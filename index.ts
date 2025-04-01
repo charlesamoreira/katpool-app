@@ -6,13 +6,14 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { PushMetrics, startMetricsServer } from "./src/prometheus";
+import { poolHashRateGauge, PushMetrics, startMetricsServer } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import { stringifyHashrate } from "./src/stratum/utils";
 
 function shutdown() {
-  monitoring.log("\n\n Gracefully shutting down the pool")
+  monitoring.log("\n\nMain: Gracefully shutting down the pool")
   process.exit();
 }
 
@@ -22,6 +23,8 @@ export let DEBUG = 0
 if (process.env.DEBUG == "1") {
   DEBUG = 1;
 }
+
+export const statsInterval = 600000; // 10 minutes
 
 // Send config.json to API server
 async function sendConfig() {
@@ -61,7 +64,7 @@ const rpc = new RpcClient({
 try{  
   await rpc.connect();
 } catch(err) {
-  monitoring.error(`Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
+  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
 }
 
 monitoring.log(`Main: RPC connection started`)
@@ -81,7 +84,52 @@ sendConfig();
 startMetricsServer();
 
 const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
-const templates = new Templates(rpc, treasury.address, config.stratum.templates.cacheSize);
+// Array to hold multiple pools
+const pools: Pool[] = [];
 
-const stratum = new Stratum(templates, config.stratum.port, config.stratum.difficulty, treasury.address, config.stratum.sharesPerMinute);
-const pool = new Pool(treasury, stratum, stratum.sharesManager);
+for (const stratumConfig of config.stratum) {
+    // Create Templates instance
+    const templates = new Templates(rpc, treasury.address, stratumConfig.templates.cacheSize, stratumConfig.port);
+
+    // Create Stratum instance
+    const stratum = new Stratum(
+        templates, 
+        stratumConfig.difficulty, 
+        treasury.address, 
+        stratumConfig.sharesPerMinute,
+        stratumConfig.clampPow2,
+        stratumConfig.varDiff,
+        stratumConfig.extraNonceSize,
+        stratumConfig.minDiff,
+        stratumConfig.maxDiff,
+    );
+
+    // Create Pool instance
+    const pool = new Pool(treasury, stratum, stratum.sharesManager);
+
+    // Store the pool for later reference
+    pools.push(pool);
+}
+
+// Function to calculate and update pool hash rate
+function calculatePoolHashrate() {
+    let totalRate = 0;
+
+    pools.forEach((pool) => {
+        pool.sharesManager.getMiners().forEach((minerData) => {
+            minerData.workerStats.forEach((stats) => {
+                totalRate += stats.hashrate;
+            });
+        });
+    });
+
+    const rateStr = stringifyHashrate(totalRate);
+    metrics.updateGaugeValue(poolHashRateGauge, ['pool', pools[0].sharesManager.poolAddress], totalRate);
+    monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
+}
+
+// Set interval for subsequent updates
+setInterval(calculatePoolHashrate, statsInterval);
+
+// Now you have an array of `pools` for each stratum configuration
+monitoring.log(`Main: ✅ Created ${pools.length} pools.`);

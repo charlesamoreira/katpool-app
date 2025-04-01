@@ -25,11 +25,13 @@ export default class Server {
   difficulty: number
   private onMessage: MessageCallback
   private monitoring: Monitoring
+  private port: number
 
   constructor (port: number, difficulty: number, onMessage: MessageCallback) {
     this.monitoring = new Monitoring
     this.difficulty = difficulty
     this.onMessage = onMessage
+    this.port = port;
 
     this.socket = Bun.listen({
       hostname: "0.0.0.0",
@@ -38,7 +40,7 @@ export default class Server {
         open: this.onConnect.bind(this),
         data: this.onData.bind(this),
         error: (socket, error) => {
-          this.monitoring.error(`Opennig socket: ${error}`)
+          this.monitoring.error(`server ${this.port}: Opennig socket ${error}`)
         }
       }
     })
@@ -78,12 +80,12 @@ export default class Server {
             socket.write(JSON.stringify(response) + '\n')
           } else if (error instanceof Error) {
             response.error![1] = error.message
-            this.monitoring.error(`server: Ending socket : ${error.message}`);
+            this.monitoring.error(`server ${this.port}: Ending socket : ${error.message}`);
             return socket.end(JSON.stringify(response))  
           } else throw error 
         })
       } else {
-        this.monitoring.error(`server: Ending socket`);  
+        this.monitoring.error(`server ${this.port}: Ending socket`);  
         socket.end()
       }
     }
@@ -91,7 +93,7 @@ export default class Server {
     socket.data.cachedBytes = messages[0]
 
     if (socket.data.cachedBytes.length > 512) {
-      this.monitoring.error(`server: Ending socket as socket.data.cachedBytes.length > 512`);
+      this.monitoring.error(`server ${this.port}: Ending socket as socket.data.cachedBytes.length > 512`);
       socket.end()
     }
   }

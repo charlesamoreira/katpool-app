@@ -27,7 +27,9 @@ export enum AsicType {
   Unknown = ""
 }
 
-const workerCounters = new Map<string, number>();
+const MIN_DIFF = config.stratum[0].minDiff || 64;
+const MAX_DIFF = config.stratum[0].maxDiff || 131072;
+const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
 
 export default class Stratum extends EventEmitter {
   server: Server;
@@ -38,33 +40,42 @@ export default class Stratum extends EventEmitter {
   sharesManager: SharesManager;
   private minerDataLock = new Mutex();
   private extraNonceSize:number;
+  private clampPow2: boolean;
+  private varDiff: boolean;
+  private extraNonce: number;
+  public port: number;
 
-  constructor(templates: Templates, port: number, initialDifficulty: number, poolAddress: string, sharesPerMin: number) {
+  constructor(templates: Templates, initialDifficulty: number, poolAddress: string, sharesPerMin: number, clampPow2: boolean, varDiff: boolean, extraNonce: number, stratumMinDiff: number, stratumMaxDiff: number) {
     super();
     this.monitoring = new Monitoring
-    this.sharesManager = new SharesManager(poolAddress);
-    this.server = new Server(port, initialDifficulty, this.onMessage.bind(this));
+    this.port = templates.port;
+    this.sharesManager = new SharesManager(poolAddress, initialDifficulty ,stratumMinDiff, stratumMaxDiff, templates.port);
+    this.server = new Server(templates.port, initialDifficulty, this.onMessage.bind(this));
     this.difficulty = initialDifficulty;
     this.templates = templates;
+    this.clampPow2 = clampPow2;
+    this.varDiff = varDiff;
+    this.extraNonce = extraNonce;
     this.templates.register((id, hash, timestamp, header) => this.announceTemplate(id, hash, timestamp, header));
-    this.monitoring.log(`Stratum: Initialized with difficulty ${this.difficulty}`);
+    this.monitoring.log(`Stratum ${this.port}: Initialized with difficulty ${this.difficulty}`);
 
     // Start the VarDiff thread
-    const clampPow2 = config.stratum.clampPow2 || true; // Enable clamping difficulty to powers of 2
-    const varDiff = config.stratum.varDiff || false; // Enable variable difficulty
-    if (varDiff)
-      this.sharesManager.startVardiffThread(sharesPerMin, clampPow2).then(() => {
-        this.monitoring.log("VarDiff thread started successfully.");
+    this.clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
+    this.varDiff = varDiff || false; // Enable variable difficulty
+    if (this.varDiff) {
+      this.sharesManager.startVardiffThread(sharesPerMin, this.clampPow2).then(() => {
+        this.monitoring.log(`Stratum ${this.port}: VarDiff thread started successfully.`);
       })
       .catch((err) => {
-        this.monitoring.error(`Failed to start VarDiff thread: ${err}`);
+        this.monitoring.error(`Stratum ${this.port}: Failed to start VarDiff thread: ${err}`);
       });;
+    }
 
-    this.extraNonceSize = Math.min(Number(config.stratum.extraNonceSize), 3 ) || 0;
+    this.extraNonceSize = Math.min(Number(this.extraNonce), 3 ) || 0;
   }
 
   announceTemplate(id: string, hash: string, timestamp: bigint, header: IRawHeader) {
-    this.monitoring.log(`Stratum: Announcing new template ${id}`);
+    this.monitoring.log(`Stratum ${this.port}: Announcing new template ${id}`);
     const tasksData: { [key in Encoding]?: string } = {};
     Object.values(Encoding).filter(value => typeof value !== 'number').forEach(value => {
       const encoding = Encoding[value as keyof typeof Encoding];
@@ -80,16 +91,27 @@ export default class Stratum extends EventEmitter {
     });
     this.subscriptors.forEach((socket) => {
       if (socket.readyState === "closed") {
-        this.monitoring.debug(`Stratum: Deleting socket on closed stats for: ${socket.data.workers}`)
+        this.monitoring.debug(`Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`)
         this.subscriptors.delete(socket);
       } else {      
         socket.data.workers.forEach((worker, _) => {
-          let varDiff = this.sharesManager.getClientVardiff(worker)
-				  if (varDiff != socket.data.difficulty && varDiff != 0) {
-            this.monitoring.log(`Stratum: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
-            this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
-            this.reflectDifficulty(socket, worker.name);
-            this.sharesManager.startClientVardiff(worker);
+          if (this.varDiff) {
+            const workerStats = this.sharesManager.getMiners().get(worker.address)?.workerStats?.get(worker.name) ?? null;
+            let check = true;
+            if (workerStats) {
+              check = workerStats.varDiffEnabled;
+            } else {
+              this.monitoring.log(`Stratum ${this.port}: Worker stat not found for ${worker.name}`);
+            }
+            if (check) {
+              let varDiff = this.sharesManager.getClientVardiff(worker)
+              if (varDiff != socket.data.difficulty && varDiff != 0) {
+                this.monitoring.log(`Stratum ${this.port}: Updating VarDiff for ${worker.name} from ${socket.data.difficulty} to ${varDiff}`);
+                this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
+                this.reflectDifficulty(socket, worker.name);
+                this.sharesManager.startClientVardiff(worker);
+              }
+            }
           }
         });
 
@@ -105,6 +127,66 @@ export default class Stratum extends EventEmitter {
     };
     socket.write(JSON.stringify(event) + '\n');
   }
+
+  // Function to check if a number is power of 2
+  isPowerOf2(num: number): boolean {
+    return (num & (num - 1)) === 0 && num > 0;
+  };
+
+  // Function to round to the nearest power of 2
+  roundToNearestPowerOf2(num: number): number {
+    if (num < MIN_DIFF || num > MAX_DIFF) return DEFAULT_DIFF;
+
+    let pow = 1;
+    while (pow < num) {
+        pow *= 2;
+    }
+
+    const lower = pow / 2;
+    const upper = pow;
+
+    // Choose the nearest power of 2
+    return (num - lower < upper - num) ? lower : upper;
+  };
+
+  // Function to extract and validate difficulty
+  parseDifficulty(input: string): number | null {
+    const validPattern = /^(d=|diff=)?\d+$/i;
+
+    if (!validPattern.test(input)) {
+      return null;  // Invalid pattern, return null
+    }
+
+    const match = input.match(/(\d+)/);
+    if (match) {
+        const diff = Number(match[0]);
+        if (!isNaN(diff)) {
+            return diff;
+        }
+    }
+    return null;
+  };
+
+  // Function to apply clamping logic
+  getDifficulty(input: string): number {
+    const diff = this.parseDifficulty(input);
+
+    if (diff === null || diff < MIN_DIFF || diff > MAX_DIFF) {
+        this.monitoring.error(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
+        return -1;
+    }
+
+    // Clamp to range
+    const clampedDiff = Math.min(Math.max(diff, MIN_DIFF), MAX_DIFF);
+
+    // Ensure power-of-2 clamping
+    const finalDiff = this.isPowerOf2(clampedDiff) 
+        ? clampedDiff 
+        : this.roundToNearestPowerOf2(clampedDiff);
+
+    this.monitoring.log(`Stratum: User requested: ${diff}, applied: ${finalDiff}`);
+    return finalDiff;
+  };
 
   private async onMessage(socket: Socket<Miner>, request: Request) {
     const release = await this.minerDataLock.acquire();
@@ -135,11 +217,24 @@ export default class Stratum extends EventEmitter {
           }
           this.subscriptors.add(socket);        
           this.emit('subscription', socket.remoteAddress, request.params[0]);
-          this.monitoring.log(`Stratum: Miner subscribed from ${socket.remoteAddress}`);
+          this.monitoring.log(`Stratum ${this.port}: Miner subscribed from ${socket.remoteAddress}`);
           break;
         }
         case 'mining.authorize': {
+          let varDiffStatus = false;
           const [address, name] = request.params[0].split('.');
+          let userDiff = this.difficulty; // Defaults to the ports default difficulty
+          const userDiffInput = request.params[1];
+          if (this.port === 8888 && (userDiffInput != '' || /\d/.test(userDiffInput))) { // Only when they connect to this port, allow user defined diff
+            userDiff = this.getDifficulty(userDiffInput);
+            if (userDiff == -1) { // Incorrectly set difficulty.
+              userDiff = DEFAULT_DIFF;
+              varDiffStatus = true;
+            } 
+            this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${userDiffInput}`);
+            this.monitoring.log(`Stratum: Extracted user diff value: ${userDiff}`);  
+          } 
+
           if (!Address.validate(address)) throw Error(`Invalid address, parsed address: ${address}, request: ${request.params[0]}`);
           if (!name) throw Error(`Worker name is not set. ${request.params[0]}`);
 
@@ -170,10 +265,11 @@ export default class Stratum extends EventEmitter {
               varDiffStartTime: Date.now(),
               varDiffSharesFound: 0,
               varDiffWindow: 0,
-              minDiff: this.difficulty,
+              minDiff: userDiff,
               recentShares: new Denque<{ timestamp: number, difficulty: number, workerName: string }>(),
               hashrate: 0,
-              asicType: socket.data.asicType
+              asicType: socket.data.asicType,
+              varDiffEnabled: varDiffStatus,
             });
           // }
 
@@ -194,7 +290,7 @@ export default class Stratum extends EventEmitter {
           this.reflectDifficulty(socket, worker.name);
           varDiff.labels(worker.name).set(workerStats.minDiff);
           
-          if (DEBUG) this.monitoring.debug(`Stratum: Authorizing worker - Address: ${address}, Worker Name: ${name}`);
+          if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Authorizing worker - Address: ${address}, Worker Name: ${name}`);
 
           metrics.updateGaugeValue(activeMinerGuage, [name, address, socket.data.asicType], Math.floor(Date.now() / 1000));
           break;
@@ -202,16 +298,16 @@ export default class Stratum extends EventEmitter {
         case 'mining.submit': {
           const [address, name] = request.params[0].split('.');
           metrics.updateGaugeInc(minerjobSubmissions, [name, address]);
-          if (DEBUG) this.monitoring.debug(`Stratum: Submitting job for Worker Name: ${name}`);
+          if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Submitting job for Worker Name: ${name}`);
           const worker = socket.data.workers.get(name);
-          if (DEBUG) this.monitoring.debug(`Stratum: Checking worker data on socket for : ${name}`);
+          if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Checking worker data on socket for : ${name}`);
           if (!worker || worker.address !== address) {
-            if (DEBUG) this.monitoring.debug(`Stratum: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`);
+            if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`);
             throw Error(`Mismatching worker details request: worker.Addr: ${worker?.address}, ${request.params[0]}`);
           }
           const hash = this.templates.getHash(request.params[1]);
           if (!hash) {
-            if (DEBUG) this.monitoring.debug(`Stratum: Job not found - Address: ${address}, Worker Name: ${name}`);
+            if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Job not found - Address: ${address}, Worker Name: ${name}`);
             metrics.updateGaugeInc(jobsNotFound, [name, address]);
             response.result = false;
             response.error = new StratumError('job-not-found').toDump()
@@ -222,9 +318,9 @@ export default class Stratum extends EventEmitter {
             const workerStats = minerData?.workerStats.get(worker.name);
             const workerDiff = workerStats?.minDiff;
             const socketDiff = socket.data.difficulty;
-            if (DEBUG) this.monitoring.debug(`Stratum: Current difficulties , Worker Name: ${minerId} - Worker: ${workerDiff}, Socket: ${socketDiff}`);
+            if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Current difficulties , Worker Name: ${minerId} - Worker: ${workerDiff}, Socket: ${socketDiff}`);
             const currentDifficulty = workerDiff || socketDiff;
-            if (DEBUG) this.monitoring.debug(`Stratum: Adding Share - Address: ${address}, Worker Name: ${name}, Hash: ${hash}, Difficulty: ${currentDifficulty}`);
+            if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Adding Share - Address: ${address}, Worker Name: ${name}, Hash: ${hash}, Difficulty: ${currentDifficulty}`);
 
             if (socket.data.extraNonce !== "") {
               const extranonce2Len = 16 - socket.data.extraNonce.length;
@@ -245,15 +341,15 @@ export default class Stratum extends EventEmitter {
               if (!(err instanceof Error)) throw err;
               switch (err.message) {
                 case 'Duplicate share':
-                  this.monitoring.debug("DUPLICATE_SHARE");
+                  this.monitoring.debug(`Stratum ${this.port}: DUPLICATE_SHARE`);
                   response.error = new StratumError('duplicate-share').toDump();
                   break;
                 case 'Stale header':
-                  this.monitoring.debug("Stale Header : JOB_NOT_FOUND");
+                  this.monitoring.debug(`Stratum ${this.port}: Stale Header - JOB_NOT_FOUND`);
                   response.error = new StratumError('job-not-found').toDump();
                   break;
                 case 'Invalid share':
-                  this.monitoring.debug("LOW_DIFFICULTY_SHARE");
+                  this.monitoring.debug(`Stratum ${this.port}: LOW_DIFFICULTY_SHARE`);
                   response.error = new StratumError('low-difficulty-share').toDump();
                   break;
                 default:

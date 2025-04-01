@@ -17,12 +17,14 @@ export default class Templates {
   private cacheSize: number
   private monitoring: Monitoring
   private subscriber: RedisClientType
+  public port: number
 
-  constructor (rpc: RpcClient, address: string, cacheSize: number) {
+  constructor (rpc: RpcClient, address: string, cacheSize: number, port: number) {
     this.monitoring = new Monitoring()
     this.rpc = rpc
     this.address = address
     this.cacheSize = cacheSize
+    this.port = port;
     this.subscriber = redis.createClient({
       url: "redis://" + config.redis_address,
     })
@@ -32,9 +34,9 @@ export default class Templates {
   connectRedis() {
     try{
       this.subscriber.connect()
-      this.monitoring.log(`Connection to redis established`)
+      this.monitoring.log(`Templates ${this.port}: Connection to redis established`)
     } catch (err) {
-      this.monitoring.error(`Error connecting to redis : ${err}`)
+      this.monitoring.error(`Templates ${this.port}: Error connecting to redis : ${err}`)
     }
   }
 
@@ -70,9 +72,9 @@ export default class Templates {
       // The reward_block_hash and miner_reward will be updated on maturity coinbase event in pool.allocate().
       await database.addBlockDetails(newHash ,minerId, '', miner_address, template.header.daaScore.toString(), this.address, 0n); 
       
-      if (DEBUG) this.monitoring.debug(`Templates: the block by miner ${minerId} has been accepted with hash : ${newHash}`)
+      if (DEBUG) this.monitoring.debug(`Templates ${this.port}: the block by miner ${minerId} has been accepted with hash : ${newHash}`)
     } else { // Failed
-      if (DEBUG) this.monitoring.debug(`Templates: the block by ${minerId} has been rejected, reason: ${report.report.reason}`)
+      if (DEBUG) this.monitoring.debug(`Templates ${this.port}: the block by ${minerId} has been rejected, reason: ${report.report.reason}`)
     } 
 
     // this.templates.delete(hash)
@@ -80,7 +82,7 @@ export default class Templates {
   }
 
   async register (callback: (id: string, hash: string, timestamp: bigint, header: IRawHeader) => void) {
-    this.monitoring.log(`Templates: Registering new template callback`);
+    this.monitoring.log(`Templates ${this.port}: Registering new template callback`);
     // this.rpc.addEventListener('new-block-template', async () => {
       // const template = (await this.rpc.getBlockTemplate({
       //   payAddress: this.address,
@@ -186,7 +188,7 @@ export default class Templates {
       this.templates.set(headerHash, [ template as IBlock, proofOfWork ])
       const id = this.jobs.deriveId(headerHash)
 
-      //if (DEBUG) this.monitoring.debug(`Templates: templates.size: ${this.templates.size}, cacheSize: ${this.cacheSize}`)
+      //if (DEBUG) this.monitoring.debug(`Templates ${this.port}: templates.size: ${this.templates.size}, cacheSize: ${this.cacheSize}`)
 
       if (this.templates.size > this.cacheSize) {
         this.templates.delete(this.templates.entries().next().value![0])

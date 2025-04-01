@@ -90,7 +90,7 @@ async function runBackupAndUpload() {
 
 // Schedule the job based on the interval
 cron.schedule(backupCronSchedule, async () => {
-    monitoring.log(`Scheduled backup and upload started at ${new Date().toISOString()}`);    
+    monitoring.log(`CloudBackup: Scheduled backup and upload started at ${new Date().toISOString()}`);    
 
     // We are waiting for a delay after the payment cycle, before pushing the DB dump to Google drive.
     const delay = (2 * 60 * 1000); // Convert to milliseconds

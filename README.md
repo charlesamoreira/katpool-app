@@ -59,27 +59,33 @@ Additionally:
 * **prometheus_data** folder: Optionally you can uncomment prometheus_data in docker_compose.yml to bring persistency between restarts. Prometheus requires writes and read permissions.
 
 ### Configuration
-In `prometheus.yml` **update the targets**.
+- In `prometheus.yml` **update the targets**.
 
-Check `config/config.json` and do the required configurations to your pool.
+- Check `config/config.json` and do the required configurations to your pool.
+  - **Assumption**: The **initial pool[0th pool]** is a **variable difficulty (var diff) pool** with a default port set to **8888**. Additionally, it includes support for **user-defined difficulty** settings.
 
-Please refer to [Crontab.guru](https://crontab.guru/) to set these two cron expressions.
+    - To enable user-defined difficulty, user needs to set difficulty as `d=2048` in password field.
 
-* **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
 
-* **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
+  - Please refer to [Crontab.guru](https://crontab.guru/) to set these two cron expressions.
 
-* **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
+  * **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
 
-* **block_wait_time_seconds**: time to wait since last new block message from kaspad before manually requesting a new block. 
+  * **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (* */12 * * *).
 
-  * **Note**: It is to be set in **seconds**.
+  * **payoutAlertCronSchedule**: cron schedule expression for Telegram alerting. If not set or invalid, it will be defaulted to four times a day (0 1,7,13,19 * * *).
 
-* **extraNonceSize** The value should be between 0 to 3.
+  * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
 
-* Here please prepend your own **node**. This has to be **GRPC endpoint**. 
+  * **block_wait_time_seconds**: time to wait since last new block message from kaspad before manually requesting a new block. 
 
-  * If it fails, you can update the code in `index.ts` as
+    * **Note**: It is to be set in **seconds**.
+
+  * **extraNonceSize** The value should be between 0 to 3.
+
+  * Here please prepend your own **node**. This has to be **GRPC endpoint**. 
+
+    * If it fails, you can update the code in `index.ts` as
 
 ```JS
 const rpc = new RpcClient({
