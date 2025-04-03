@@ -148,6 +148,7 @@ services:
       - backend
     volumes:
       - ./config:/app/config
+      - /root/docker_deployment/katpool-app-logs/:/app/katpool-app-logs/
     env_file:
       - .env
     restart: always
@@ -184,6 +185,7 @@ services:
     volumes:
       - ./config:/app/config
       - /root/docker_deployment/data/:/app/data/
+      - /root/docker_deployment/katpool-payment-logs/:/app/katpool-payment-logs/
     networks:
       - backend
     env_file:
