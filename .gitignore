@@ -14,3 +14,7 @@ getNewBlockTemplate
 package-lock.json
 IMPROVEMENTS.md
 google-credentials.json
+logs/
+*.log.*
+*.log
+.*.json
