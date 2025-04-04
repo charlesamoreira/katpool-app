@@ -18,3 +18,4 @@ logs/
 *.log.*
 *.log
 .*.json
+katpool-app-logs/

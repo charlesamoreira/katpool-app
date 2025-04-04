@@ -19,6 +19,84 @@
     "varDiff": true,
     "minDiff": 64,
     "maxDiff": 131072
+  },
+  {
+    "port": 1111,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 256,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 256,
+    "maxDiff": 512
+  },
+  {
+    "port": 2222,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 1024,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 512,
+    "maxDiff": 1024
+  },
+  {
+    "port": 3333,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 4096,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 2048,
+    "maxDiff": 4096
+  },
+  {
+    "port": 4444,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 8192,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 4096,
+    "maxDiff": 8192
+  },
+  {
+    "port": 5555,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 16384,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 16384,
+    "maxDiff": 32768
+  },
+  {
+    "port": 6666,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 32768,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 32768,
+    "maxDiff": 65536
   }],
   "treasury": {
     "fee": 0.75,
