@@ -51,7 +51,7 @@ const varDiffThreadSleep: number = 10
 const varDiffRejectionRateThreshold: number = 20 // If rejection rate exceeds threshold, set difficulty based on hash rate.
 const zeroDateMillS: number = new Date(0).getMilliseconds()
 
-type Contribution = {
+export type Contribution = {
   address: string;
   difficulty: number;
   timestamp: number;
