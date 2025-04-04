@@ -85,7 +85,7 @@ startMetricsServer();
 
 const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
 // Array to hold multiple pools
-const pools: Pool[] = [];
+export const stratums: Stratum[] = [];
 
 for (const stratumConfig of config.stratum) {
     // Create Templates instance
@@ -104,19 +104,18 @@ for (const stratumConfig of config.stratum) {
         stratumConfig.maxDiff,
     );
 
-    // Create Pool instance
-    const pool = new Pool(treasury, stratum, stratum.sharesManager);
-
-    // Store the pool for later reference
-    pools.push(pool);
+    // Store the stratums for later reference
+    stratums.push(stratum);
 }
+
+const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
 function calculatePoolHashrate() {
     let totalRate = 0;
 
-    pools.forEach((pool) => {
-        pool.sharesManager.getMiners().forEach((minerData) => {
+    stratums.forEach((stratum) => {
+        stratum.sharesManager.getMiners().forEach((minerData) => {
             minerData.workerStats.forEach((stats) => {
                 totalRate += stats.hashrate;
             });
@@ -124,7 +123,7 @@ function calculatePoolHashrate() {
     });
 
     const rateStr = stringifyHashrate(totalRate);
-    metrics.updateGaugeValue(poolHashRateGauge, ['pool', pools[0].sharesManager.poolAddress], totalRate);
+    metrics.updateGaugeValue(poolHashRateGauge, ['pool', stratums[0].sharesManager.poolAddress], totalRate);
     monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
 }
 
@@ -132,4 +131,4 @@ function calculatePoolHashrate() {
 setInterval(calculatePoolHashrate, statsInterval);
 
 // Now you have an array of `pools` for each stratum configuration
-monitoring.log(`Main: ✅ Created ${pools.length} pools.`);
+monitoring.log(`Main: ✅ Created ${stratums.length} stratums.`);

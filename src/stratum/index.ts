@@ -9,7 +9,7 @@ import { Encoding, encodeJob } from './templates/jobs/encoding.ts';
 import { SharesManager } from './sharesManager';
 import { minerjobSubmissions, jobsNotFound, activeMinerGuage, varDiff } from '../prometheus'
 import Monitoring from '../monitoring/index.ts';
-import { DEBUG } from '../../index'
+import { DEBUG } from '../../index';
 import { Mutex } from 'async-mutex';
 import { metrics } from '../../index';
 import Denque from 'denque';
