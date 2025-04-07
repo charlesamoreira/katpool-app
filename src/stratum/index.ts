@@ -172,7 +172,7 @@ export default class Stratum extends EventEmitter {
     const diff = this.parseDifficulty(input);
 
     if (diff === null || diff < MIN_DIFF || diff > MAX_DIFF) {
-        this.monitoring.error(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
+        this.monitoring.debug(`Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`);
         return -1;
     }
 
@@ -231,7 +231,7 @@ export default class Stratum extends EventEmitter {
               userDiff = DEFAULT_DIFF;
               varDiffStatus = true;
             } 
-            this.monitoring.error(`Stratum: Mining authorize request with: ${request.params[0]} - ${userDiffInput}`);
+            this.monitoring.debug(`Stratum: Mining authorize request with: ${request.params[0]} - ${userDiffInput}`);
             this.monitoring.log(`Stratum: Extracted user diff value: ${userDiff}`);  
           } 
 
