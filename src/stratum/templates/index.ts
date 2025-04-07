@@ -86,7 +86,7 @@ export default class Templates {
     // this.rpc.addEventListener('new-block-template', async () => {
       // const template = (await this.rpc.getBlockTemplate({
       //   payAddress: this.address,
-      //   extraData: "Katpool"
+      //   extraData: `${config.miner_info}`
       // })).block as IRawBlock;
 
     const templateChannel = config.redis_channel

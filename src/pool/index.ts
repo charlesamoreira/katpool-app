@@ -210,16 +210,16 @@ export default class Pool {
             const response = await axios.get(`${KASPA_BASE_URL}/blocks/${hash}?includeColor=false`, {
             });
             
-            const targetPattern = /\/Katpool$/;
+            const targetPattern = `/${config.miner_info}`;
             if (response?.status !== 200 && !response?.data) {
               this.monitoring.error(`Pool: Unexpected status code: ${response.status}`);
               this.monitoring.error(`Pool: Invalid or missing block hash in response data for transaction ${txnId}`);
-            } else if (response?.status === 200 && response?.data && targetPattern.test(response.data.extra.minerInfo)) {              
+            } else if (response?.status === 200 && response?.data && response.data.extra.minerInfo.includes(targetPattern)) {
               // Fetch details for the block hash where miner info matches
-              block_hash = hash
-              daaScoreF = response.data.header.daaScore
-              break    
-            } else if (response?.status === 200 && response?.data && !targetPattern.test(response.data.extra.minerInfo)) {
+              block_hash = hash;
+              daaScoreF = response.data.header.daaScore;
+              break;
+            } else if (response?.status === 200 && response?.data && !response.data.extra.minerInfo.includes(targetPattern)) {
               continue;
             } else {
               this.monitoring.error(`Pool: Error Fetching block hash for transaction ${txnId}`);
