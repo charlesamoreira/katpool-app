@@ -197,7 +197,9 @@ export class SharesManager {
       this.miners.forEach((minerData, address) => {
         let rate = 0;
         minerData.workerStats.forEach((stats, workerName) => {
-          const workerRate = getAverageHashrateGHs(stats);
+          const status = this.checkWorkerStatus(stats);
+          let workerRate = getAverageHashrateGHs(stats);
+          if (status === 0) workerRate = 0;
           rate += workerRate;
           metrics.updateGaugeValue(workerHashRateGauge, [workerName, address], workerRate);
           const rateStr = stringifyHashrate(workerRate);
@@ -208,7 +210,6 @@ export class SharesManager {
 
           // Update worker's hashrate in workerStats
           stats.hashrate = workerRate;
-          const status = this.checkWorkerStatus(stats);
           try {
             if (status === 0) {
               this.monitoring.debug(`\nSharesManager ${this.port}: MinerData before - `);
@@ -233,7 +234,6 @@ export class SharesManager {
           }
           metrics.updateGaugeValue(activeMinerGuage, [workerName, address, stats.asicType], status);
         });
-        metrics.updateGaugeValue(minerHashRateGauge, [address], rate);
         totalRate += rate;
       });
 
