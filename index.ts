@@ -6,7 +6,7 @@ import Pool from "./src/pool";
 import config from "./config/config.json";
 import dotenv from 'dotenv';
 import Monitoring from './src/monitoring'
-import { poolHashRateGauge, PushMetrics, startMetricsServer } from "./src/prometheus";
+import { minerHashRateGauge, poolHashRateGauge, PushMetrics, startMetricsServer } from "./src/prometheus";
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -127,16 +127,31 @@ const pool = new Pool(treasury, stratums);
 function calculatePoolHashrate() {
     let totalRate = 0;
 
+    const addressHashrates: Map<string, number> = new Map();
+    let poolHashRate = 0;
+    
     stratums.forEach((stratum) => {
-        stratum.sharesManager.getMiners().forEach((minerData) => {
-            minerData.workerStats.forEach((stats) => {
-                totalRate += stats.hashrate;
-            });
+      stratum.sharesManager.getMiners().forEach((minerData, address) => {
+        let rate = 0;
+        minerData.workerStats.forEach((stats) => {
+          rate += stats.hashrate;
         });
+    
+        // Aggregate rate per wallet address
+        const prevRate = addressHashrates.get(address) || 0;
+        const newRate = prevRate + rate;
+        addressHashrates.set(address, newRate);
+      });
     });
+    
+    // Update metrics and compute pool total
+    addressHashrates.forEach((rate, address) => {
+      metrics.updateGaugeValue(minerHashRateGauge, [address], rate);
+      poolHashRate += rate;
+    });      
 
-    const rateStr = stringifyHashrate(totalRate);
-    metrics.updateGaugeValue(poolHashRateGauge, ['pool', stratums[0].sharesManager.poolAddress], totalRate);
+    const rateStr = stringifyHashrate(poolHashRate);
+    metrics.updateGaugeValue(poolHashRateGauge, ['pool', stratums[0].sharesManager.poolAddress], poolHashRate);
     monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
 }
 
