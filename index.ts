@@ -18,6 +18,19 @@ function shutdown() {
 }
 
 process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+process.on('exit', (code) => {
+  monitoring.log(`Main: 🛑 Process is exiting with code: ${code}`);
+});
+
+process.on('uncaughtException', (err) => {
+  monitoring.error(`Main: Uncaught Exception: ${err}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  monitoring.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+});
 
 export let DEBUG = 0
 if (process.env.DEBUG == "1") {
