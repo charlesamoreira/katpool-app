@@ -71,8 +71,8 @@ services:
       options:
         tag: "{{.Name}}"
 
-  # kaspad: # REGULAR TESTNET
-  #   container_name: kaspad
+  # kaspad-test10: # REGULAR TESTNET
+  #   container_name: kaspad-test10
   #   image: supertypo/rusty-kaspad:v1.0.0
   #   restart: unless-stopped
   #   ports:
@@ -88,10 +88,10 @@ services:
   #   logging:
   #     driver: journald
   #     options:
-  #     tag: "{{.Name}}"
+  #       tag: "{{.Name}}"
 
-  # kaspad: # 10BPS TESTNET
-  #   container_name: kaspad
+  # kaspad-test11: # 10BPS TESTNET
+  #   container_name: kaspad-test11
   #   image: supertypo/rusty-kaspad:tn11
   #   restart: unless-stopped
   #   ports:
@@ -107,7 +107,7 @@ services:
   #   logging:
   #     driver: journald
   #     options:
-  #     tag: "{{.Name}}"
+  #       tag: "{{.Name}}"
 
   go-app:
     image: ghcr.io/nacho-the-kat/katpool-blocktemplate-fetcher:beta-v1.0.2-main  # Build the Go app from the ./app directory
