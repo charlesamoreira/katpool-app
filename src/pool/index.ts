@@ -9,6 +9,7 @@ import { PushMetrics } from '../prometheus'; // Import the PushMetrics class
 import axios, { AxiosError } from 'axios';
 import config from "../../config/config.json";
 import axiosRetry from 'axios-retry';
+import JsonBig from 'json-bigint';
  
 axiosRetry(axios, { 
    retries: 3,
@@ -58,7 +59,7 @@ export default class Pool {
     this.pushMetrics = new PushMetrics(); // Initialize PushMetrics
 
     // this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
-    this.treasury.on('coinbase', (minerReward: bigint, poolFee: bigint, txnId: string, daaScore: string) => {
+    this.treasury.on('coinbase', (minerReward: bigint, poolFee: bigint, reward_block_hash: string, txnId: string, daaScore: string) => {
       const currentTimestamp = Date.now();
       // if (currentTimestamp - this.lastProcessedTimestamp < 1000) { // 1 second cooldown
       //   this.duplicateEventCount++;
@@ -67,29 +68,45 @@ export default class Pool {
       // }
       this.lastProcessedTimestamp = currentTimestamp;
       this.duplicateEventCount = 0;
-      this.monitoring.log(`Pool: Processing coinbase event. Timestamp: ${currentTimestamp}. Transaction hash: ${txnId}`);
-      this.allocate(minerReward, poolFee, txnId, daaScore).catch(console.error)
+      this.monitoring.log(`Pool: Processing coinbase event. Timestamp: ${currentTimestamp}. Reward block hash: ${reward_block_hash}`);
+      this.allocate(minerReward, poolFee, txnId, reward_block_hash, daaScore).catch(this.monitoring.error)
     });
     //this.treasury.on('revenue', (amount: bigint) => this.revenuize(amount));
 
     // this.monitoring.log(`Pool: Pool is active on port ${this.stratum.server.socket.port}.`);
   }
 
-  private async revenuize(amount: bigint, txnId: string) {
+  private async revenuize(amount: bigint, block_hash: string, reward_block_hash: string) {
     const address = this.treasury.address; // Use the treasury address
     const minerId = 'pool'; // Use a fixed ID for the pool itself
     await this.database.addBalance(minerId, address, amount, 0n); // Use the total amount as the share
-    this.monitoring.log(`Pool: Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase for txnId: ${txnId}.`);
+    this.monitoring.log(`Pool: Treasury generated ${sompiToKaspaStringWithSuffix(amount, this.treasury.processor.networkId!)} revenue over last coinbase of: ${block_hash}. Received in ${reward_block_hash}.`);
   }
 
-  private async allocate(minerReward: bigint, poolFee: bigint, txnId: string, daaScore: string) {
-    this.monitoring.debug(`Pool: Starting allocation. Miner Reward: ${minerReward}, Pool Fee: ${poolFee}, txnId: ${txnId}`);
+  private async allocate(minerReward: bigint, poolFee: bigint, txnId: string, reward_block_hash: string, daaScore: string) {
+    this.monitoring.debug(`Pool: Starting allocation. Miner Reward: ${minerReward}, Pool Fee: ${poolFee} received on block: ${reward_block_hash}`);
     const works = new Map<string, { minerId: string, difficulty: number }>();
     let totalWork = 0;
     const walletHashrateMap = new Map<string, number>();
+    let isFallback = false;
 
-    // Get all shares since the last allocation from all the pools
-    const shares: Contribution[] = this.stratum.flatMap(stratum => stratum.sharesManager.getSharesSinceLastAllocation());
+    // Get all shares since for the current maturity event.
+    const database = new Database(process.env.DATABASE_URL || '');
+    let {block_hash, daaScoreF, timeStamp} = await this.fetchBlockHashAndDaaScore(reward_block_hash)
+    if (reward_block_hash != '' && daaScoreF != '0') { 
+      // We don't have miner_id and corresponding wallet address
+      await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward + poolFee); 
+    }
+
+    let shares: Contribution[] = [];
+    if (daaScoreF != '0') shares = this.stratum.flatMap(stratum => stratum.sharesManager.getSharesSinceLastAllocation(BigInt(daaScoreF)));
+
+    if (shares.length === 0 || daaScoreF == '0') {
+      shares = this.stratum.flatMap(stratum => stratum.sharesManager.getDifficultyAndTimeSinceLastAllocation());
+      this.monitoring.debug(`Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`);
+      isFallback = true;
+    }
+    
     this.monitoring.debug(`Pool: Retrieved ${shares.length} shares for allocation`);
 
     for (const share of shares) {
@@ -129,16 +146,6 @@ export default class Pool {
 
     const scaledTotal = BigInt(totalWork * 100);
 
-    const database = new Database(process.env.DATABASE_URL || '');
-    let {reward_block_hash, block_hash, daaScoreF} = await this.fetchBlockHashAndDaaScore(txnId)
-    if (reward_block_hash == '' && daaScoreF == '0') { /* Fallback*/ } 
-    else {
-      if (daaScoreF === '0') daaScoreF = daaScore
-          
-      // We don't have miner_id and corresponding wallet address
-      await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward + poolFee); 
-    }
-
     // Initially show NACHO rebate KAS as config.treasury.nachoRebate ~0.33% for all. If he holds 100M+ NACHO or 1 NFT he may get full rebate
     const rebate = (poolFee * BigInt(config.treasury.nachoRebate * 100)) / 10000n;
     // Allocate rewards proportionally based on difficulty
@@ -151,14 +158,17 @@ export default class Pool {
 
       // Track rewards for the miner
       this.pushMetrics.updateMinerRewardGauge(address, work.minerId, block_hash, daaScoreF);
+      let msg = `Pool: Work: ${JsonBig.stringify(works, null, 4)}`;
+      if (isFallback) msg += `FallBack`;
+      this.monitoring.debug(msg);
 
       if (DEBUG) {
-        this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} , rebate in KAS ${sompiToKaspaStringWithSuffix(nacho_rebate_kas, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}, txnId: ${txnId}`);
+        this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} , rebate in KAS ${sompiToKaspaStringWithSuffix(nacho_rebate_kas, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}, block_hash: ${block_hash}`);
       }
     }
 
     // Handle pool fee revenue
-    if (works.size > 0 && poolFee > 0) this.revenuize(poolFee, txnId);
+    if (works.size > 0 && poolFee > 0) this.revenuize(poolFee, block_hash, reward_block_hash);
   }
 
   handleError(error: unknown, context: string) {
@@ -175,64 +185,54 @@ export default class Pool {
     }
   } 
 
-  async fetchBlockHashAndDaaScore(txnId: string) {
+  async fetchBlockHashAndDaaScore(rewardHash: string) {
     let block_hash: string = 'block_hash_placeholder'
     let daaScoreF = '0' // Needs to be removed later
-    let reward_block_hash = ''
-    // Fetch reward hash
+    let reward_block_hash = rewardHash
+    let timeStamp = '';
     try {
-      const response = await axios.get(`${KASPA_BASE_URL}/transactions/${txnId}?inputs=false&outputs=false&resolve_previous_outpoints=no`, {
+      const reward_block_hash_url = `${KASPA_BASE_URL}/blocks/${reward_block_hash}?includeColor=false`;
+      this.monitoring.debug(`Pool: Reward block hash url: ${reward_block_hash_url}`);
+      const response = await axios.get(reward_block_hash_url, {
       });
       
       if (response?.status !== 200 && !response?.data) {
         this.monitoring.error(`Pool: Unexpected status code: ${response.status}`);
-        this.monitoring.error(`Pool: Invalid or missing block hash in response data for transaction ${txnId}`);
-      } else {
-        reward_block_hash = response.data.block_hash[0] // Reward block hash
-      }
-    } catch (error) {
-        this.handleError(error, `Fetching reward block hash for transaction ${txnId}`);
-    }
-
-    // Fetch actual block hash
-    try {
-      const response = await axios.get(`${KASPA_BASE_URL}/blocks/${reward_block_hash}?includeColor=false`, {
-      });
-      
-      if (response?.status !== 200 && !response?.data) {
-        this.monitoring.error(`Pool: Unexpected status code: ${response.status}`);
-        this.monitoring.error(`Pool: Invalid or missing block hash in response data for transaction ${txnId}`);
+        this.monitoring.error(`Pool: Invalid or missing block hash in response data for reward block ${reward_block_hash}`);
       } else {
         let block_hashes = response.data.verboseData.mergeSetBluesHashes
         for (const hash of block_hashes) {
           
           try {
-            const response = await axios.get(`${KASPA_BASE_URL}/blocks/${hash}?includeColor=false`, {
+            const block_hash_url = `${KASPA_BASE_URL}/blocks/${hash}?includeColor=false`;
+            this.monitoring.debug(`Pool: Block hash url: ${block_hash_url}`);
+            const response = await axios.get(block_hash_url, {
             });
             
             const targetPattern = `/${config.miner_info}`;
             if (response?.status !== 200 && !response?.data) {
               this.monitoring.error(`Pool: Unexpected status code: ${response.status}`);
-              this.monitoring.error(`Pool: Invalid or missing block hash in response data for transaction ${txnId}`);
+              this.monitoring.error(`Pool: Invalid or missing block hash in response data for reward block ${reward_block_hash}`);
             } else if (response?.status === 200 && response?.data && response.data.extra.minerInfo.includes(targetPattern)) {
               // Fetch details for the block hash where miner info matches
               block_hash = hash;
-              daaScoreF = response.data.header.daaScore;
+              daaScoreF = response?.data?.header?.daaScore;
+              timeStamp = response?.data?.header?.timestamp;
               break;
             } else if (response?.status === 200 && response?.data && !response.data.extra.minerInfo.includes(targetPattern)) {
               continue;
             } else {
-              this.monitoring.error(`Pool: Error Fetching block hash for transaction ${txnId}`);
+              this.monitoring.error(`Pool: Non 200 status code for mined block hash - Fetching block hash for reward block ${reward_block_hash}`);
             }
           } catch (error) {
-              this.handleError(error, `Fetching block hash for transaction ${txnId}`);
+              this.handleError(error, `CATCH Fetching block hash for reward block ${reward_block_hash}`);
           }      
         }
       }
     } catch (error) {
-        this.handleError(error, `Fetching block hash for transaction ${txnId}`);
+        this.handleError(error, `PARENT CATCH Fetching block hash for reward block ${reward_block_hash}`);
     }
 
-    return { reward_block_hash, block_hash, daaScoreF }
+    return { block_hash, daaScoreF, timeStamp }
   }
 }

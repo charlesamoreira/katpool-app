@@ -1,4 +1,4 @@
-import { RpcClient, Encoding, Resolver } from "./wasm/kaspa";
+import { RpcClient, Encoding, Resolver, ConnectStrategy } from "./wasm/kaspa";
 import Treasury from "./src/treasury";
 import Templates from "./src/stratum/templates";
 import Stratum from "./src/stratum";
@@ -38,6 +38,8 @@ if (process.env.DEBUG == "1") {
 }
 
 export const statsInterval = 600000; // 10 minutes
+const RPC_RETRY_INTERVAL = 5 * 100 // 500 MILI SECONDS
+const RPC_TIMEOUT = 24 * 60 * 60 * 1000 // 24 HOURS
 
 // Send config.json to API server
 async function sendConfig() {
@@ -75,7 +77,11 @@ const rpc = new RpcClient({
 });
 
 try{  
-  await rpc.connect();
+  await rpc.connect({
+    retryInterval: RPC_RETRY_INTERVAL, // timeinterval for reconnection
+    timeoutDuration: RPC_TIMEOUT, // rpc timeout duration
+    strategy: ConnectStrategy.Retry, // retry strategy for disconnection
+  });
 } catch(err) {
   monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
 }

@@ -72,7 +72,7 @@ export default class Templates {
       // The reward_block_hash and miner_reward will be updated on maturity coinbase event in pool.allocate().
       await database.addBlockDetails(newHash ,minerId, '', miner_address, template.header.daaScore.toString(), this.address, 0n); 
       
-      if (DEBUG) this.monitoring.debug(`Templates ${this.port}: the block by miner ${minerId} has been accepted with hash : ${newHash}`)
+      if (DEBUG) this.monitoring.debug(`Templates ${this.port}: the block with daaScore: ${template.header.daaScore} and nonce: ${nonce} by miner ${minerId} has been accepted with hash : ${newHash}`)
     } else { // Failed
       if (DEBUG) this.monitoring.debug(`Templates ${this.port}: the block by ${minerId} has been rejected, reason: ${report.report.reason}`)
     } 
@@ -187,6 +187,7 @@ export default class Templates {
       const proofOfWork = new PoW(header)
       this.templates.set(headerHash, [ template as IBlock, proofOfWork ])
       const id = this.jobs.deriveId(headerHash)
+      Jobs.setJobIdDaaScoreMapping(id, template.header.daaScore);
 
       //if (DEBUG) this.monitoring.debug(`Templates ${this.port}: templates.size: ${this.templates.size}, cacheSize: ${this.cacheSize}`)
 

@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import Monitoring from '../../monitoring';
+import JsonBig from 'json-bigint';
 
 type Miner = {
   balance: bigint;
@@ -14,6 +16,8 @@ const defaultMiner: Miner = {
   balance: 0n,
 };
 
+const monitoring = new Monitoring();
+
 export default class Database {
   private pool: Pool;
 
@@ -22,7 +26,50 @@ export default class Database {
       connectionString: connectionString,
     });
   }
+  async addRewardDetails(reward_block_hash: string, reward_txn_id: string) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('INSERT INTO reward_block_details (reward_block_hash, reward_txn_id) VALUES ($1, $2)', [
+        reward_block_hash,
+        reward_txn_id
+      ]);
+    } catch(error) {
+      monitoring.error(`database: addRewardDetails - ${JsonBig.stringify(error)}`);
+    } finally {
+      client.release();
+    }
+  }
 
+  async getRewardBlockHash(reward_txn_id: string): Promise<string | undefined> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT reward_block_hash FROM reward_block_details WHERE reward_txn_id = $1',
+        [reward_txn_id]
+      );
+  
+      if (result.rows.length === 0) {
+        monitoring.debug(`databaseNo reward_block_hash found for txn ID: ${reward_txn_id}`);
+        return undefined;
+      }
+      return result.rows[0].reward_block_hash;
+    } catch (error) {
+      monitoring.error(`database: getRewardBlockHash - ${error}`);
+      
+      // Optional: handle duplicate entry
+      const err = error as { code?: string; message?: string }; // Now 'error' is explicitly defined
+      monitoring.error(`database: addRewardDetails - ${JsonBig.stringify(error)}`);
+        
+      if (err?.code === '23505') {
+        monitoring.debug(`database: Reward entry already exists for txn: ${reward_txn_id}`);
+      }    
+      
+      return undefined;
+    } finally {
+      client.release();
+    }
+  }
+  
   async addBalance(minerId: string, wallet: string, balance: bigint, nacho_rebate_kas: bigint) {
     const client = await this.pool.connect();
     const key = `${minerId}_${wallet}`;
