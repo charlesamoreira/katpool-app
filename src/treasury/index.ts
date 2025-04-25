@@ -56,7 +56,6 @@ export default class Treasury extends EventEmitter {
           return;
         }
   
-        // this.monitoring.debug(`TREASURY: ${reward_block_hash} pushed to queue.`)
         this.blockQueue.push(data);
       } catch(error) {
         this.monitoring.error(`TREASURY: Error in block-added handler: ${error}`);
@@ -68,28 +67,21 @@ export default class Treasury extends EventEmitter {
 
     const processQueue = async () => {
       while(true) {
-        // this.monitoring.debug(`TREASURY: 102`);
         while (activeJobs < MAX_PARALLEL_JOBS && this.blockQueue.length > 0) {
           const data = this.blockQueue.shift();
           activeJobs++;
 
-          // this.monitoring.debug(`TREASURY: Parallel Processing: - ${data?.block?.header?.hash}`);
-
           (async () => {
-            // this.monitoring.debug(`TREASURY: 110`);
             try {
-              // this.monitoring.debug(`TREASURY: 112`);
               await this.processBlockData(data);
             } catch (error) {
               this.monitoring.error(`TREASURY: Error in parallel handler - ${error}`);
             } finally {
-              // this.monitoring.debug(`TREASURY: 117`);
               activeJobs--;
             }
           })();
         }
 
-        // this.monitoring.debug(`TREASURY: 123`);
         await new Promise(resolve => setTimeout(resolve, 10));
       }
     };
@@ -97,7 +89,6 @@ export default class Treasury extends EventEmitter {
   }  
 
   private async processBlockData(data: any) {
-    // this.monitoring.debug(`TREASURY: 130`);
     const transactions = data?.block?.transactions || [];
     if (!Array.isArray(transactions) || transactions.length === 0) return;
   
@@ -105,9 +96,7 @@ export default class Treasury extends EventEmitter {
 
     txLoop:
     for (const tx of transactions) {
-      // this.monitoring.debug(`TREASURY: 136`);
       for (const [index, vout] of (tx.outputs || []).entries()) {
-        // this.monitoring.debug(`TREASURY: 138`);        
         const addr = vout?.verboseData?.scriptPublicKeyAddress;
         if (addr === TARGET_ADDRESS) {
           try {
