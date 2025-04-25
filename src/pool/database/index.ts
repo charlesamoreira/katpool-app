@@ -29,7 +29,7 @@ export default class Database {
   async addRewardDetails(reward_block_hash: string, reward_txn_id: string) {
     const client = await this.pool.connect();
     try {
-      await client.query('INSERT INTO reward_block_details (reward_block_hash, reward_txn_id) VALUES ($1, $2)', [
+      await client.query('INSERT INTO reward_block_details (reward_block_hash, reward_txn_id) VALUES ($1, $2) ON CONFLICT (reward_txn_id) DO UPDATE SET reward_block_hash = EXCLUDED.reward_block_hash', [
         reward_block_hash,
         reward_txn_id
       ]);

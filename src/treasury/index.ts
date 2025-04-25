@@ -90,6 +90,7 @@ export default class Treasury extends EventEmitter {
 
   private async processBlockData(data: any) {
     const transactions = data?.block?.transactions || [];
+    const isChainBlock = data?.block?.verboseData?.isChainBlock;
     if (!Array.isArray(transactions) || transactions.length === 0) return;
   
     const TARGET_ADDRESS = this.address;
@@ -103,7 +104,14 @@ export default class Treasury extends EventEmitter {
             const reward_block_hash = data?.block?.header?.hash; 
             const txId = tx.verboseData?.transactionId;
             this.monitoring.debug(`Treasury: Reward hash: ${reward_block_hash} | TX: ${txId}`);
-            db.addRewardDetails(reward_block_hash, txId);
+            const reward_block_hashDB = await db.getRewardBlockHash(txId.toString());
+            if (!reward_block_hashDB) {
+              // No entry exists — insert new
+              await db.addRewardDetails(reward_block_hash, txId);
+            } else if (reward_block_hashDB !== reward_block_hash && isChainBlock) {
+              // Entry exists with different block hash and is chain block — update
+              await db.addRewardDetails(reward_block_hash, txId);
+            }
             break txLoop;
           } catch(error) {
             this.monitoring.error(`Treasury: Adding reward details -${error}`);
