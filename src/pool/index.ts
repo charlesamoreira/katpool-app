@@ -187,7 +187,6 @@ export default class Pool {
     let timeStamp = '';
     try {
       const reward_block_hash_url = `${KASPA_BASE_URL}/blocks/${reward_block_hash}?includeColor=false`;
-      this.monitoring.debug(`Pool: Reward block hash url: ${reward_block_hash_url}`);
       const response = await axios.get(reward_block_hash_url, {
       });
       
@@ -200,7 +199,6 @@ export default class Pool {
           
           try {
             const block_hash_url = `${KASPA_BASE_URL}/blocks/${hash}?includeColor=false`;
-            this.monitoring.debug(`Pool: Block hash url: ${block_hash_url}`);
             const response = await axios.get(block_hash_url, {
             });
             

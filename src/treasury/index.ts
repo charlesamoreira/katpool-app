@@ -37,12 +37,12 @@ export default class Treasury extends EventEmitter {
     try {
       this.rpc.subscribeBlockAdded();
     } catch(error) {
-      this.monitoring.error(`TREASURY: SUBSCRIBE ERROR: ${error}`);
+      this.monitoring.error(`Treasury: SUBSCRIBE ERROR: ${error}`);
     }
     try {
       this.listenToBlocks();
     } catch(error) {
-      this.monitoring.error(`TREASURY: LISTEN ERROR: ${error}`);
+      this.monitoring.error(`Treasury: LISTEN ERROR: ${error}`);
     }
   }
 
@@ -52,14 +52,14 @@ export default class Treasury extends EventEmitter {
         const data = eventData.data;  
         const reward_block_hash = data?.block?.header?.hash;
         if (!reward_block_hash) {
-          this.monitoring.debug("TREASURY: Block hash is undefined");
+          this.monitoring.debug("Treasury: Block hash is undefined");
           return;
         }
   
         this.blockQueue.push(data);
       } catch(error) {
-        this.monitoring.error(`TREASURY: Error in block-added handler: ${error}`);
-      }
+        this.monitoring.error(`Treasury: Error in block-added handler: ${error}`);
+      } 
     });
 
     const MAX_PARALLEL_JOBS = 10;
@@ -75,7 +75,7 @@ export default class Treasury extends EventEmitter {
             try {
               await this.processBlockData(data);
             } catch (error) {
-              this.monitoring.error(`TREASURY: Error in parallel handler - ${error}`);
+              this.monitoring.error(`Treasury: Error in parallel handler - ${error}`);
             } finally {
               activeJobs--;
             }
@@ -102,7 +102,7 @@ export default class Treasury extends EventEmitter {
           try {
             const reward_block_hash = data?.block?.header?.hash; 
             const txId = tx.verboseData?.transactionId;
-            this.monitoring.debug(`Reward hash: ${reward_block_hash} | TX: ${txId}`);
+            this.monitoring.debug(`Treasury: Reward hash: ${reward_block_hash} | TX: ${txId}`);
             db.addRewardDetails(reward_block_hash, txId);
             break txLoop;
           } catch(error) {
