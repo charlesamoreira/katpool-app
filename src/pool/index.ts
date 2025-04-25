@@ -88,7 +88,6 @@ export default class Pool {
     const works = new Map<string, { minerId: string, difficulty: number }>();
     let totalWork = 0;
     const walletHashrateMap = new Map<string, number>();
-    let isFallback = false;
 
     // Get all shares since for the current maturity event.
     const database = new Database(process.env.DATABASE_URL || '');
@@ -104,7 +103,6 @@ export default class Pool {
     if (shares.length === 0 || daaScoreF == '0') {
       shares = this.stratum.flatMap(stratum => stratum.sharesManager.getDifficultyAndTimeSinceLastAllocation());
       this.monitoring.debug(`Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`);
-      isFallback = true;
     }
     
     this.monitoring.debug(`Pool: Retrieved ${shares.length} shares for allocation`);
@@ -158,9 +156,6 @@ export default class Pool {
 
       // Track rewards for the miner
       this.pushMetrics.updateMinerRewardGauge(address, work.minerId, block_hash, daaScoreF);
-      let msg = `Pool: Work: ${JsonBig.stringify(works, null, 4)}`;
-      if (isFallback) msg += `FallBack`;
-      this.monitoring.debug(msg);
 
       if (DEBUG) {
         this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} , rebate in KAS ${sompiToKaspaStringWithSuffix(nacho_rebate_kas, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}, block_hash: ${block_hash}`);
