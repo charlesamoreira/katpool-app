@@ -340,15 +340,21 @@ export class SharesManager {
           continue;
         }
 
-        // Apply scaling: diff * time since last share
-      const scaledDifficulty = (workerStats.minDiff ?? 0) * (timeSinceLastShare);
+        const MAX_ELAPSED_MS = 5 * 60 * 1000; // 5 minutes
+        const cappedTime = Math.min(timeSinceLastShare, MAX_ELAPSED_MS);
+
+        // Normalize weight: 0 to 1 (smooth ramp-up for new connections)
+        const timeWeight = cappedTime / MAX_ELAPSED_MS;
+
+        // Scaled difficulty with weighted time factor
+        const scaledDifficulty = Math.round((workerStats.minDiff ?? 0) * timeWeight);
 
         // Add to shares array
         shares.push({
           address,
           minerId: workerStats.workerName,
           difficulty: scaledDifficulty,
-          timestamp: timeSinceLastShare,
+          timestamp: cappedTime,
           jobId: '', 
           daaScore: BigInt(0), 
         });
