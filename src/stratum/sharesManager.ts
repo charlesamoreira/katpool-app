@@ -313,7 +313,6 @@ export class SharesManager {
     while (this.shareWindow.length > 0 && (Jobs.getDaaScoreFromJobId(this.shareWindow.peekFront()?.jobId!) <= daaScore)) {
       shares.push(this.shareWindow.shift()!);
     }
-    this.monitoring.debug(`Pool: - SharesManager ${this.port}: Retrieved ${shares.length} shares. Last block time: ${daaScore}, Current time: ${currentTime}`);
     this.lastAllocationDaaScore = daaScore;
     return shares;
   }
