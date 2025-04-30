@@ -10,7 +10,9 @@ import axios, { AxiosError } from 'axios';
 import config from "../../config/config.json";
 import axiosRetry from 'axios-retry';
 import JsonBig from 'json-bigint';
- 
+
+const monitoring = new Monitoring();
+
 axiosRetry(axios, { 
    retries: 3,
    retryDelay: (retryCount) => {
@@ -19,7 +21,7 @@ axiosRetry(axios, {
    retryCondition(error) {
     // Ensure error.response exists before accessing status
     if (!error.response) {
-      new Monitoring().error(`No response received: ${error.message}`);
+      monitoring.error(`No response received: ${error.message}`);
       return false; // Do not retry if no response (e.g., network failure)
     }
 
@@ -55,7 +57,7 @@ export default class Pool {
     }
 
     this.database = new Database(databaseUrl); // Change this line
-    this.monitoring = new Monitoring();
+    this.monitoring = monitoring;
     this.pushMetrics = new PushMetrics(); // Initialize PushMetrics
 
     // this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
@@ -138,7 +140,8 @@ export default class Pool {
 
     // Ensure totalWork is greater than 0 to prevent division by zero
     if (totalWork === 0) {
-      this.monitoring.debug(`Pool: No work found for allocation in the current cycle. Total shares: ${shares.length}`);
+      this.monitoring.debug(`Pool: No work found for allocation in the current cycle. Total shares: ${shares.length}.`);
+      this.monitoring.debug(`Pool: For No work found - ${JsonBig.stringify(shares, null, 4)}`);
       return;
     }
 

@@ -49,7 +49,7 @@ export default class Database {
       );
   
       if (result.rows.length === 0) {
-        monitoring.debug(`databaseNo reward_block_hash found for txn ID: ${reward_txn_id}`);
+        monitoring.debug(`database: No reward_block_hash found for txn ID: ${reward_txn_id}`);
         return undefined;
       }
       return result.rows[0].reward_block_hash;
