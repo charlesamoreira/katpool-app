@@ -93,7 +93,13 @@ export default class Pool {
 
     // Get all shares since for the current maturity event.
     const database = new Database(process.env.DATABASE_URL || '');
-    let {block_hash, daaScoreF, timeStamp} = await this.fetchBlockHashAndDaaScore(reward_block_hash)
+    let block_hash = '', daaScoreF = '0';
+    if (reward_block_hash != '') {
+      const result = await this.fetchBlockHashAndDaaScore(reward_block_hash)
+      block_hash = result.block_hash;
+      daaScoreF = result.daaScoreF;
+    }
+
     if (reward_block_hash != '' && daaScoreF != '0') { 
       // We don't have miner_id and corresponding wallet address
       await database.addBlockDetails(block_hash, '', reward_block_hash, '', daaScoreF, this.treasury.address, minerReward + poolFee); 
@@ -187,7 +193,6 @@ export default class Pool {
     let block_hash: string = 'block_hash_placeholder'
     let daaScoreF = '0' // Needs to be removed later
     let reward_block_hash = rewardHash
-    let timeStamp = '';
     try {
       const reward_block_hash_url = `${KASPA_BASE_URL}/blocks/${reward_block_hash}?includeColor=false`;
       const response = await axios.get(reward_block_hash_url, {
@@ -213,7 +218,6 @@ export default class Pool {
               // Fetch details for the block hash where miner info matches
               block_hash = hash;
               daaScoreF = response?.data?.header?.daaScore;
-              timeStamp = response?.data?.header?.timestamp;
               break;
             } else if (response?.status === 200 && response?.data && !response.data.extra.minerInfo.includes(targetPattern)) {
               continue;
@@ -229,6 +233,6 @@ export default class Pool {
         this.handleError(error, `PARENT CATCH Fetching block hash for reward block ${reward_block_hash}`);
     }
 
-    return { block_hash, daaScoreF, timeStamp }
+    return { block_hash, daaScoreF }
   }
 }
