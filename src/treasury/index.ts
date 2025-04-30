@@ -152,10 +152,11 @@ export default class Treasury extends EventEmitter {
         const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
         this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
         const reward_block_hash = await db.getRewardBlockHash(txnId.toString());
-        if (reward_block_hash != undefined)
+        if (reward_block_hash != undefined) {
           this.emit('coinbase', reward - poolFee, poolFee, reward_block_hash,  txnId, daaScore)
-        else
-        this.emit('coinbase', reward - poolFee, poolFee, '',  txnId, daaScore)
+        } else {
+          this.emit('coinbase', reward - poolFee, poolFee, '',  txnId, daaScore)
+        }
       }
     })
 
