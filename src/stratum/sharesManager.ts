@@ -346,7 +346,15 @@ export class SharesManager {
         const timeWeight = cappedTime / MAX_ELAPSED_MS;
 
         // Scaled difficulty with weighted time factor
-        const scaledDifficulty = Math.round((workerStats.minDiff ?? 0) * timeWeight);
+        let rawDifficulty = Math.round((workerStats.minDiff ?? 0) * timeWeight);
+        if (rawDifficulty === 0) {
+          const fallback = Math.max(1, Math.floor((workerStats.minDiff ?? this.stratumMinDiff) * 0.1));
+          if (DEBUG) this.monitoring.debug(
+            `SharesManager ${this.port}: Scaled difficulty for ${workerStats.workerName} was 0, fallback to ${fallback}`
+          );
+          rawDifficulty = fallback;
+        }
+        const scaledDifficulty = rawDifficulty;
 
         // Add to shares array
         shares.push({
