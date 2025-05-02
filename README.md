@@ -77,7 +77,7 @@ Additionally:
 
   * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
 
-  * **block_wait_time_seconds**: time to wait since last new block message from kaspad before manually requesting a new block. 
+  * **block_wait_time_milliseconds**: time to wait since last new block message from kaspad before manually requesting a new block. 
 
     * **Note**: It is to be set in **seconds**.
 
