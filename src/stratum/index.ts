@@ -336,7 +336,7 @@ export default class Stratum extends EventEmitter {
               } else {
                 nonce = BigInt('0x' + request.params[2]);
               }
-              this.sharesManager.addShare(minerId, worker.address, hash, currentDifficulty, nonce, this.templates, socket.data.encoding);
+              this.sharesManager.addShare(minerId, worker.address, hash, currentDifficulty, nonce, this.templates, socket.data.encoding, request.params[1]);
             } catch(err: any) {
               if (!(err instanceof Error)) throw err;
               switch (err.message) {

@@ -7,6 +7,7 @@ import express from 'express';
 import client from 'prom-client';
 
 const queue = new PQueue({ concurrency: 1 });
+const monitoring = new Monitoring();
 
 collectDefaultMetrics();
 export { register };
@@ -160,7 +161,7 @@ export function startMetricsServer() {
   });
 
   app.listen(9999, () => {
-    new Monitoring().log('Metrics server running at http://localhost:9999');
+    monitoring.log('Metrics server running at http://localhost:9999');
   });
 }
 
