@@ -1,13 +1,10 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from "../../wasm/kaspa";
 import { type Worker } from './server';
-import type { RegistryContentType } from 'prom-client';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';
 import { DEBUG, statsInterval } from '../../index';
 import {
-  minerHashRateGauge,
-  poolHashRateGauge,
   minerAddedShares,
   minerIsBlockShare,
   minerInvalidShares,
@@ -218,6 +215,7 @@ export class SharesManager {
           stats.hashrate = workerRate;
           try {
             if (status === 0) {
+              let found = false;
               this.monitoring.debug(`\nSharesManager ${this.port}: MinerData before - `);
               this.logData(minerData)
               this.monitoring.debug(`SharesManager ${this.port}: Status is inactive for worker: ${workerName}, address: ${address}`)
@@ -225,9 +223,10 @@ export class SharesManager {
               this.monitoring.debug(`SharesManager ${this.port}: Deleted workerstats: ${workerName}, address: ${address}`)
               let socket : Socket<any>;
               minerData.sockets.forEach(skt => {
-                if (skt.data.workers.has(workerName)) {
+                if (skt.data.workers.has(workerName) && !found) {
                   socket = skt;
                   this.monitoring.debug(`SharesManager ${this.port}: Socket found for deletion: ${workerName}, address: ${address}`)
+                  found = true;
                 }
               });
               minerData.sockets.delete(socket!);

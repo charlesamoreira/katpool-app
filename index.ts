@@ -12,8 +12,16 @@ import fs from 'fs';
 import path from 'path';
 import { stringifyHashrate } from "./src/stratum/utils";
 
-function shutdown() {
-  monitoring.log("\n\nMain: Gracefully shutting down the pool")
+async function shutdown() {
+  monitoring.log("\n\nMain: Gracefully shutting down the pool...");
+  try {
+    await rpc.unsubscribeBlockAdded();
+    await rpc.unsubscribeNewBlockTemplate();
+    await treasury.unregisterProcessor();
+  } catch(error) {
+    monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
+  }
+  monitoring.log('Graceful shutdown completed.');
   process.exit();
 }
 
@@ -76,6 +84,21 @@ const rpc = new RpcClient({
   networkId: config.network,
 });
 
+try {
+  rpc.addEventListener('connect', async () => {
+    monitoring.debug('Main: RPC is reconnected');      
+    if (treasury && !treasury.reconnecting) {
+      await treasury.reconnectBlockListener();
+    }
+  })
+} catch(error) {
+  monitoring.error(`Main: Error during RPC connect: ${error}`);
+}
+
+rpc.addEventListener('disconnect', async (event) => {
+  monitoring.debug('Main: RPC is disconnected');
+})
+
 try{  
   await rpc.connect({
     retryInterval: RPC_RETRY_INTERVAL, // timeinterval for reconnection
@@ -127,7 +150,7 @@ for (const stratumConfig of config.stratum) {
     stratums.push(stratum);
 }
 
-const pool = new Pool(treasury, stratums);
+export const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
 function calculatePoolHashrate() {
