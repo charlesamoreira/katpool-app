@@ -16,6 +16,7 @@ async function shutdown() {
   monitoring.log("\n\nMain: Gracefully shutting down the pool...");
   try {
     await rpc.unsubscribeBlockAdded();
+    await rpc.unsubscribeNewBlockTemplate();
     await treasury.unregisterProcessor();
   } catch(error) {
     monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
