@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import Monitoring from '../monitoring';
 import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from "../../wasm/kaspa"
 import Database from '../pool/database';
+import { DEBUG } from '../..';
 
 const startTime = BigInt(Date.now())
 
@@ -121,45 +122,60 @@ export default class Treasury extends EventEmitter {
       }
     }
   }  
+
+  utxoProcStartHandler = async () => {
+    await this.context.clear()
+    await this.context.trackAddresses([this.address])
+  };
+
+  maturityHandler = async (e) => {
+    // this.monitoring.log(`Treasury: Maturity event data : ${JsonBig.stringify(e)}`)
+    if (e?.data?.type === 'incoming') {
+      // @ts-ignore
+      if (!e?.data?.data?.utxoEntries?.some(element => element?.isCoinbase)) {
+        this.monitoring.log(`Treasury: Not coinbase event. Skipping`)
+        return
+      }
+      const { timestamps } = await this.rpc.getDaaScoreTimestampEstimate({
+        daaScores: [e.data.blockDaaScore]
+      })
+      if (timestamps[0] < startTime) {
+        this.monitoring.log(`Treasury: Earlier event detected. Skipping`)
+        return
+      }
+
+      // @ts-ignore
+      const reward = e.data.value
+      const txnId = e.data.id
+      const daaScore = e.data.blockDaaScore
+      this.monitoring.log(`Treasury: Maturity event received. Reward: ${reward}, Event timestamp: ${Date.now()}, TxnId: ${txnId}`);
+      const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
+      this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
+      const reward_block_hash = await db.getRewardBlockHash(txnId.toString());
+      if (reward_block_hash != undefined) {
+        this.emit('coinbase', reward - poolFee, poolFee, reward_block_hash,  txnId, daaScore)
+      } else {
+        this.emit('coinbase', reward - poolFee, poolFee, '',  txnId, daaScore)
+      }
+    }
+  };
   
   private registerProcessor() {
-    this.processor.addEventListener("utxo-proc-start", async () => {
-      await this.context.clear()
-      await this.context.trackAddresses([this.address])
-    })
+    this.processor.addEventListener("utxo-proc-start", this.utxoProcStartHandler);
 
-    this.processor.addEventListener('maturity', async (e) => {
-      // this.monitoring.log(`Treasury: Maturity event data : ${JsonBig.stringify(e)}`)
-      if (e?.data?.type === 'incoming') {
-        // @ts-ignore
-        if (!e?.data?.data?.utxoEntries?.some(element => element?.isCoinbase)) {
-          this.monitoring.log(`Treasury: Not coinbase event. Skipping`)
-          return
-        }
-        const { timestamps } = await this.rpc.getDaaScoreTimestampEstimate({
-          daaScores: [e.data.blockDaaScore]
-        })
-        if (timestamps[0] < startTime) {
-          this.monitoring.log(`Treasury: Earlier event detected. Skipping`)
-          return
-        }
+    this.processor.addEventListener('maturity', this.maturityHandler);
 
-        // @ts-ignore
-        const reward = e.data.value
-        const txnId = e.data.id
-        const daaScore = e.data.blockDaaScore
-        this.monitoring.log(`Treasury: Maturity event received. Reward: ${reward}, Event timestamp: ${Date.now()}, TxnId: ${txnId}`);
-        const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
-        this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
-        const reward_block_hash = await db.getRewardBlockHash(txnId.toString());
-        if (reward_block_hash != undefined) {
-          this.emit('coinbase', reward - poolFee, poolFee, reward_block_hash,  txnId, daaScore)
-        } else {
-          this.emit('coinbase', reward - poolFee, poolFee, '',  txnId, daaScore)
-        }
-      }
-    })
+    this.processor.start();
+  }
 
-    this.processor.start()
+  async unregisterProcessor() {
+    if (DEBUG) this.monitoring.debug(`TrxManager: unregisterProcessor - this.context.clear()`);
+    await this.context.clear();
+  
+    if (DEBUG) this.monitoring.debug(`TrxManager: Removing event listeners`);
+    this.processor.removeEventListener('utxo-proc-start', this.utxoProcStartHandler);
+    this.processor.removeEventListener('maturity', this.maturityHandler);
+  
+    await this.processor.stop();    
   }
 }

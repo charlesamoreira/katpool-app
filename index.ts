@@ -12,8 +12,15 @@ import fs from 'fs';
 import path from 'path';
 import { stringifyHashrate } from "./src/stratum/utils";
 
-function shutdown() {
-  monitoring.log("\n\nMain: Gracefully shutting down the pool")
+async function shutdown() {
+  monitoring.log("\n\nMain: Gracefully shutting down the pool...");
+  try {
+    await rpc.unsubscribeBlockAdded();
+    await treasury.unregisterProcessor();
+  } catch(error) {
+    monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
+  }
+  monitoring.log('Graceful shutdown completed.');
   process.exit();
 }
 
