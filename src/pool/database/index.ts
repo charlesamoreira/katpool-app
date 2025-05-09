@@ -48,9 +48,9 @@ export default class Database {
         [reward_txn_id]
       );
   
-      if (result.rows.length === 0 && !checkForInsert) {
-        monitoring.debug(`database: No reward_block_hash found for txn ID: ${reward_txn_id}`);
-        return undefined;
+      if (result.rows.length === 0) {
+        if (!checkForInsert) monitoring.debug(`database: No reward_block_hash found for txn ID: ${reward_txn_id}`);
+        return '';
       }
       return result.rows[0].reward_block_hash;
     } catch (error) {
@@ -64,7 +64,7 @@ export default class Database {
         monitoring.debug(`database: Reward entry already exists for txn: ${reward_txn_id}`);
       }    
       
-      return undefined;
+      return '';
     } finally {
       client.release();
     }
