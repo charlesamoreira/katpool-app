@@ -41,6 +41,16 @@ export default class Server {
         data: this.onData.bind(this),
         error: (socket, error) => {
           this.monitoring.error(`server ${this.port}: Opennig socket ${error}`)
+        },
+        close: (socket) => {
+          const workers = Array.from(socket.data.workers.values());
+          if (workers.length === 0) {
+            this.monitoring.debug(`server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.`);
+          } else {
+            for (const worker of workers) {
+              this.monitoring.debug(`server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`);
+            }
+          }
         }
       }
     })
