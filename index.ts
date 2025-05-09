@@ -87,7 +87,7 @@ const rpc = new RpcClient({
 try {
   rpc.addEventListener('connect', async () => {
     monitoring.debug('Main: RPC is reconnected');      
-    if (!treasury.reconnecting) {
+    if (treasury && !treasury.reconnecting) {
       await treasury.reconnectBlockListener();
     }
   })
