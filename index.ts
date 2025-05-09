@@ -84,6 +84,21 @@ const rpc = new RpcClient({
   networkId: config.network,
 });
 
+try {
+  rpc.addEventListener('connect', async () => {
+    monitoring.debug('Main: RPC is reconnected');      
+    if (!treasury.reconnecting) {
+      await treasury.reconnectBlockListener();
+    }
+  })
+} catch(error) {
+  monitoring.error(`Main: Error during RPC connect: ${error}`);
+}
+
+rpc.addEventListener('disconnect', async (event) => {
+  monitoring.debug('Main: RPC is disconnected');
+})
+
 try{  
   await rpc.connect({
     retryInterval: RPC_RETRY_INTERVAL, // timeinterval for reconnection
@@ -135,7 +150,7 @@ for (const stratumConfig of config.stratum) {
     stratums.push(stratum);
 }
 
-const pool = new Pool(treasury, stratums);
+export const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
 function calculatePoolHashrate() {

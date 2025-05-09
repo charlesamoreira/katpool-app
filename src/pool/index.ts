@@ -235,4 +235,22 @@ export default class Pool {
 
     return { block_hash, daaScoreF }
   }
+
+  async fetchRewardBlockHash(txnId: string) {
+    let reward_block_hash = ''
+    try {
+      const response = await axios.get(`${KASPA_BASE_URL}/transactions/${txnId}?inputs=false&outputs=false&resolve_previous_outpoints=no`, {
+      });
+      if (response?.status !== 200 && !response?.data) {
+        this.monitoring.error(`Pool: Unexpected status code: ${response.status}`);
+        this.monitoring.error(`Pool: Invalid or missing block hash in response data for transaction ${txnId}`);
+      } else {
+        reward_block_hash = response.data.block_hash[0] // Reward block hash
+      }
+    } catch (error) {
+      this.handleError(error, `Fetching reward block hash for transaction ${txnId}`);
+      return reward_block_hash;
+    }
+    return reward_block_hash;
+  }
 }

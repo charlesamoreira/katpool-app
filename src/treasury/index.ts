@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import Monitoring from '../monitoring';
 import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from "../../wasm/kaspa"
 import Database from '../pool/database';
-import { DEBUG } from '../..';
+import { DEBUG, pool } from '../..';
 
 const startTime = BigInt(Date.now())
 
@@ -20,7 +20,11 @@ export default class Treasury extends EventEmitter {
   fee: number
   rpc: RpcClient
   private monitoring: Monitoring;
-  private blockQueue: any[] = [];
+  private blockQueue: Map<string, any> = new Map();
+  private lastBlockTimestamp: number = Date.now();
+  private queueStarted = false;
+  private watchdogStarted = false;
+  reconnecting = false;
   
   constructor(rpc: RpcClient, networkId: string, privateKey: string, fee: number) {
     super()
@@ -42,34 +46,74 @@ export default class Treasury extends EventEmitter {
     }
     try {
       this.listenToBlocks();
+      this.startWatchdog(); 
     } catch(error) {
       this.monitoring.error(`Treasury: LISTEN ERROR: ${error}`);
     }
   }
 
-  private async listenToBlocks() {  
-    this.rpc.addEventListener("block-added", async (eventData: any) => {
-      try {
-        const data = eventData.data;  
-        const reward_block_hash = data?.block?.header?.hash;
-        if (!reward_block_hash) {
-          this.monitoring.debug("Treasury: Block hash is undefined");
-          return;
-        }
-  
-        this.blockQueue.push(data);
-      } catch(error) {
-        this.monitoring.error(`Treasury: Error in block-added handler: ${error}`);
-      } 
-    });
+  async listenToBlocks() {  
+    this.rpc.addEventListener("block-added", this.blockAddedHandler);
 
+    if (!this.queueStarted) {
+      this.queueStarted = true;
+      this.startQueueProcessor();
+    }
+  }  
+
+  blockAddedHandler = async (eventData: any) => {
+    try {
+      const data = eventData.data;  
+      const reward_block_hash = data?.block?.header?.hash;
+      if (!reward_block_hash) {
+        this.monitoring.debug("Treasury: Block hash is undefined");
+        return;
+      }
+
+      if (this.blockQueue.size > 1000) {
+        this.monitoring.error('Treasury: Block queue overflow. Dropping oldest entries.');
+        const keys = Array.from(this.blockQueue.keys()).slice(0, 100);
+        for (const key of keys) {
+          this.blockQueue.delete(key);
+        }
+      }
+      
+      this.lastBlockTimestamp = Date.now();
+      if (!this.blockQueue.has(reward_block_hash)) {
+        this.blockQueue.set(reward_block_hash, data);
+      } else {
+        this.monitoring.debug(`Treasury: Duplicate block ${reward_block_hash} ignored`);
+      }
+    } catch(error) {
+      this.monitoring.error(`Treasury: Error in block-added handler: ${error}`);
+    } 
+  };
+
+  private startWatchdog() {
+    if (this.watchdogStarted) return;
+    this.watchdogStarted = true;
+  
+    setInterval(() => {
+      const secondsSinceLastBlock = (Date.now() - this.lastBlockTimestamp) / 1000;
+      if (secondsSinceLastBlock > 120) {
+        this.monitoring.debug("Treasury: Watchdog - No block received in 2 minutes. Reconnecting RPC...");
+        this.reconnectBlockListener();
+      }
+    }, 30000); // check every 30 seconds
+  }
+
+  private startQueueProcessor() {
     const MAX_PARALLEL_JOBS = 10;
     let activeJobs = 0;
 
     const processQueue = async () => {
       while(true) {
-        while (activeJobs < MAX_PARALLEL_JOBS && this.blockQueue.length > 0) {
-          const data = this.blockQueue.shift();
+        while (activeJobs < MAX_PARALLEL_JOBS && this.blockQueue.size > 0) {
+          const nextEntry = this.blockQueue.entries().next().value;
+          if (!nextEntry) continue;
+
+          const [hash, data] = nextEntry;
+          this.blockQueue.delete(hash);
           activeJobs++;
 
           (async () => {
@@ -89,6 +133,23 @@ export default class Treasury extends EventEmitter {
     processQueue();
   }  
 
+  async reconnectBlockListener() {
+    if (this.reconnecting) return;
+    this.reconnecting = true;
+    try {
+      this.rpc.removeEventListener("block-added", this.blockAddedHandler);
+      this.rpc.unsubscribeBlockAdded();
+      this.rpc.subscribeBlockAdded();
+      await this.listenToBlocks();
+      this.startWatchdog();
+    } catch (error) {
+      this.monitoring.error(`Treasury: Error during reconnectBlockListener: ${error}`);
+      setTimeout(() => this.reconnectBlockListener(), 5000); // Retry after 5 seconds
+    } finally {
+      this.reconnecting = false;
+    }
+  }
+  
   private async processBlockData(data: any) {
     const transactions = data?.block?.transactions || [];
     const isChainBlock = data?.block?.verboseData?.isChainBlock;
@@ -151,7 +212,9 @@ export default class Treasury extends EventEmitter {
       this.monitoring.log(`Treasury: Maturity event received. Reward: ${reward}, Event timestamp: ${Date.now()}, TxnId: ${txnId}`);
       const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
       this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
-      const reward_block_hash = await db.getRewardBlockHash(txnId.toString());
+      let reward_block_hash = await pool.fetchRewardBlockHash(txnId.toString());
+      if (reward_block_hash == '')
+        reward_block_hash = await db.getRewardBlockHash(txnId.toString()) || '';
       if (reward_block_hash != undefined) {
         this.emit('coinbase', reward - poolFee, poolFee, reward_block_hash,  txnId, daaScore)
       } else {
