@@ -166,7 +166,7 @@ export default class Treasury extends EventEmitter {
             const reward_block_hash = data?.block?.header?.hash; 
             const txId = tx.verboseData?.transactionId;
             this.monitoring.debug(`Treasury: Reward hash: ${reward_block_hash} | TX: ${txId}`);
-            const reward_block_hashDB = await db.getRewardBlockHash(txId.toString());
+            const reward_block_hashDB = await db.getRewardBlockHash(txId.toString(), true);
             if (!reward_block_hashDB) {
               // No entry exists — insert new
               await db.addRewardDetails(reward_block_hash, txId);
@@ -189,7 +189,7 @@ export default class Treasury extends EventEmitter {
     await this.context.trackAddresses([this.address])
   };
 
-  maturityHandler = async (e) => {
+  maturityHandler = async (e: any) => {
     // this.monitoring.log(`Treasury: Maturity event data : ${JsonBig.stringify(e)}`)
     if (e?.data?.type === 'incoming') {
       // @ts-ignore
@@ -213,9 +213,9 @@ export default class Treasury extends EventEmitter {
       const poolFee = (reward * BigInt(this.fee * 100)) / 10000n
       this.monitoring.log(`Treasury: Pool fees to retain on the coinbase cycle: ${poolFee}.`);
       let reward_block_hash = await pool.fetchRewardBlockHash(txnId.toString());
-      if (reward_block_hash == '')
+      if (!reward_block_hash)
         reward_block_hash = await db.getRewardBlockHash(txnId.toString()) || '';
-      if (reward_block_hash != undefined) {
+      if (reward_block_hash) {
         this.emit('coinbase', reward - poolFee, poolFee, reward_block_hash,  txnId, daaScore)
       } else {
         this.emit('coinbase', reward - poolFee, poolFee, '',  txnId, daaScore)

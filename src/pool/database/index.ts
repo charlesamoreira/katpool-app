@@ -40,7 +40,7 @@ export default class Database {
     }
   }
 
-  async getRewardBlockHash(reward_txn_id: string): Promise<string | undefined> {
+  async getRewardBlockHash(reward_txn_id: string, checkForInsert?: boolean): Promise<string | undefined> {
     const client = await this.pool.connect();
     try {
       const result = await client.query(
@@ -48,7 +48,7 @@ export default class Database {
         [reward_txn_id]
       );
   
-      if (result.rows.length === 0) {
+      if (result.rows.length === 0 && !checkForInsert) {
         monitoring.debug(`database: No reward_block_hash found for txn ID: ${reward_txn_id}`);
         return undefined;
       }
