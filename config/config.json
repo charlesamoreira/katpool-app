@@ -98,6 +98,19 @@
     "varDiff": false,
     "minDiff": 32768,
     "maxDiff": 65536
+  },
+  {
+    "port": 7777,
+    "templates": {
+      "cacheSize": 300
+    },
+    "difficulty": 65536,
+    "sharesPerMinute": 10,
+    "extraNonceSize": 2, 
+    "clampPow2": true,
+    "varDiff": false,
+    "minDiff": 65536,
+    "maxDiff": 131072
   }],
   "treasury": {
     "fee": 0.75,
