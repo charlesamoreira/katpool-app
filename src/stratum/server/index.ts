@@ -3,6 +3,7 @@ import { parseMessage, StratumError, type Request, type Response } from './proto
 import { Encoding } from '../templates/jobs/encoding'
 import Monitoring from '../../monitoring'
 import { AsicType } from '..'
+import type { SharesManager } from '../sharesManager'
 
 export type Worker = {
   address: string,
@@ -26,12 +27,14 @@ export default class Server {
   private onMessage: MessageCallback
   private monitoring: Monitoring
   private port: number
+  private sharesManager: SharesManager
 
-  constructor (port: number, difficulty: number, onMessage: MessageCallback) {
+  constructor (port: number, difficulty: number, onMessage: MessageCallback, sharesManager: SharesManager) {
     this.monitoring = new Monitoring
     this.difficulty = difficulty
     this.onMessage = onMessage
     this.port = port;
+    this.sharesManager = sharesManager;
 
     this.socket = Bun.listen({
       hostname: "0.0.0.0",
@@ -49,6 +52,7 @@ export default class Server {
           } else {
             for (const worker of workers) {
               this.monitoring.debug(`server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`);
+              sharesManager.deleteSocket(socket);              
             }
           }
         }

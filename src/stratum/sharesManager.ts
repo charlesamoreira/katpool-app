@@ -1,6 +1,6 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from "../../wasm/kaspa";
-import { type Worker } from './server';
+import { type Miner, type Worker } from './server';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';
 import { DEBUG, statsInterval } from '../../index';
@@ -265,6 +265,21 @@ export class SharesManager {
       str += "\n===============================================================================\n";
       this.monitoring.log(str);
     }, statsInterval); // 10 minutes
+  }
+
+deleteSocket(socket: Socket<Miner>) {
+    try {
+      this.miners.forEach((minerData, address) => {
+        minerData.workerStats.forEach((stats, workerName) => {
+          if (socket.data.workers.has(workerName)) {
+            minerData.sockets.delete(socket);
+              this.monitoring.debug(`SharesManager ${this.port}: Deleted socket for : ${workerName}, address: ${address}`)
+          }
+        });
+      });
+    } catch (error) {
+      this.monitoring.error(`SharesManager ${this.port}: Deleting socket for address: ${JSON.stringify(socket.data.workers)}`);
+    }
   }
 
   getMiners() {
