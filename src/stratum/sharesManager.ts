@@ -272,12 +272,13 @@ deleteSocket(socket: Socket<Miner>) {
       this.miners.forEach((minerData, address) => {
         minerData.workerStats.forEach((stats, workerName) => {
           if (socket.data.workers.has(workerName)) {
+            let workers = socket.data.workers;
             let deleted = minerData.sockets.delete(socket);
             if (deleted) this.monitoring.debug(`SharesManager ${this.port}: Deleted socket for : ${workerName}, address: ${address}`);            
             metrics.updateGaugeValue(activeMinerGuage, [workerName, address, stats.asicType], 0);
             deleted = minerData.workerStats.delete(workerName);
             if (deleted) this.monitoring.debug(`SharesManager ${this.port}: Deleted worker stats for : ${workerName}, address: ${address}`);          
-            this.monitoring.debug(`SharesManager ${this.port}: Delete socket invoked: ${JSON.stringify(socket.data.workers)}`);
+            this.monitoring.debug(`SharesManager ${this.port}: Delete socket invoked: ${JSON.stringify(workers)}`);
           }
         });
       });
