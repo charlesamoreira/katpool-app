@@ -283,7 +283,7 @@ deleteSocket(socket: Socket<Miner>) {
         });
       });
     } catch (error) {
-      this.monitoring.error(`SharesManager ${this.port}: Deleting socket for address: ${JSON.stringify(socket.data.workers)}`);
+      this.monitoring.error(`SharesManager ${this.port}: Deleting socket for address: ${JSON.stringify(socket.data.workers)} - ${error}`);
     }
   }
 
