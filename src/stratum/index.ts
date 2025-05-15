@@ -50,7 +50,7 @@ export default class Stratum extends EventEmitter {
     this.monitoring = new Monitoring
     this.port = templates.port;
     this.sharesManager = new SharesManager(poolAddress, initialDifficulty ,stratumMinDiff, stratumMaxDiff, templates.port);
-    this.server = new Server(templates.port, initialDifficulty, this.onMessage.bind(this));
+    this.server = new Server(templates.port, initialDifficulty, this.onMessage.bind(this), this.sharesManager);
     this.difficulty = initialDifficulty;
     this.templates = templates;
     this.clampPow2 = clampPow2;
