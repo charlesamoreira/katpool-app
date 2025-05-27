@@ -166,6 +166,8 @@ services:
       - postgres
     networks:
       - backend
+    volumes:
+      - /root/docker_deployment/config:/app/config
     env_file:
       - .env
     ports:
