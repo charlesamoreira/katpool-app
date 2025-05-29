@@ -1,10 +1,8 @@
-import type { IBlock, RpcClient, IRawBlock, IRawHeader } from "../../../wasm/kaspa"
+import type { IBlock, RpcClient, IRawHeader } from "../../../wasm/kaspa"
 import { Header, PoW } from "../../../wasm/kaspa"
 import Jobs from "./jobs"
-import { minedBlocksGauge, paidBlocksGauge, successBlocksDetailsGauge } from '../../prometheus';
 import Monitoring from '../../monitoring'
 import { DEBUG } from '../../../index'
-import { metrics } from '../../../index';   
 import Database from '../../pool/database';
 import redis, { type RedisClientType } from 'redis';
 import config from '../../../config/config.json';
@@ -62,12 +60,8 @@ export default class Templates {
       block: template,
       allowNonDAABlocks: false
     })
-    metrics.updateGaugeInc(minedBlocksGauge, [minerId, this.address]);
     
     if (report.report.type === "success") {
-      metrics.updateGaugeInc(paidBlocksGauge, [minerId, this.address]);
-      metrics.updateGaugeValue(successBlocksDetailsGauge, [minerId, this.address, newHash, template.header.daaScore.toString()], Date.now());
-
       const database = new Database(process.env.DATABASE_URL || '');
       // The reward_block_hash and miner_reward will be updated on maturity coinbase event in pool.allocate().
       await database.addBlockDetails(newHash ,minerId, '', miner_address, template.header.daaScore.toString(), this.address, 0n); 

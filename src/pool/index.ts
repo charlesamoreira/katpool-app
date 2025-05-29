@@ -43,7 +43,6 @@ export default class Pool {
   private stratum: Stratum[];
   private database: Database;
   private monitoring: Monitoring;
-  private pushMetrics: PushMetrics; // Add PushMetrics property
   private lastProcessedTimestamp = 0; // Add timestamp check
   private duplicateEventCount = 0;
 
@@ -58,7 +57,6 @@ export default class Pool {
 
     this.database = new Database(databaseUrl); // Change this line
     this.monitoring = monitoring;
-    this.pushMetrics = new PushMetrics(); // Initialize PushMetrics
 
     // this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
     this.treasury.on('coinbase', (minerReward: bigint, poolFee: bigint, reward_block_hash: string, txnId: string, daaScore: string) => {
@@ -89,7 +87,6 @@ export default class Pool {
     this.monitoring.debug(`Pool: Starting allocation. Miner Reward: ${minerReward}, Pool Fee: ${poolFee} received on block: ${reward_block_hash}`);
     const works = new Map<string, { minerId: string, difficulty: number }>();
     let totalWork = 0;
-    const walletHashrateMap = new Map<string, number>();
 
     // Get all shares since for the current maturity event.
     const database = new Database(process.env.DATABASE_URL || '');
@@ -127,21 +124,6 @@ export default class Pool {
       }
 
       totalWork += difficulty;
-
-      // Accumulate the hashrate by wallet address
-      if (!walletHashrateMap.has(address)) {
-        walletHashrateMap.set(address, difficulty);
-      } else {
-        walletHashrateMap.set(address, walletHashrateMap.get(address)! + difficulty);
-      }
-
-      // Update the gauge for shares added
-      this.pushMetrics.updateMinerSharesGauge(minerId, difficulty);
-    }
-
-    // Update wallet hashrate gauge for all addresses
-    for (const [walletAddress, hashrate] of walletHashrateMap) {
-      this.pushMetrics.updateWalletHashrateGauge(walletAddress, hashrate);
     }
 
     // Ensure totalWork is greater than 0 to prevent division by zero
@@ -162,9 +144,6 @@ export default class Pool {
       const nacho_rebate_kas = (scaledWork * rebate) / scaledTotal;
 
       await this.database.addBalance(work.minerId, address, share, nacho_rebate_kas);
-
-      // Track rewards for the miner
-      this.pushMetrics.updateMinerRewardGauge(address, work.minerId, block_hash, daaScoreF);
 
       if (DEBUG) {
         this.monitoring.debug(`Pool: Reward of ${sompiToKaspaStringWithSuffix(share, this.treasury.processor.networkId!)} , rebate in KAS ${sompiToKaspaStringWithSuffix(nacho_rebate_kas, this.treasury.processor.networkId!)} was ALLOCATED to ${work.minerId} with difficulty ${work.difficulty}, block_hash: ${block_hash}`);

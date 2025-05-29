@@ -6,9 +6,7 @@ import Monitoring from '../monitoring';
 import { DEBUG, statsInterval } from '../../index';
 import {
   minerAddedShares,
-  minerIsBlockShare,
   minerInvalidShares,
-  minerStaleShares,
   minerDuplicatedShares,
   varDiff,
   workerHashRateGauge,
@@ -144,7 +142,6 @@ export class SharesManager {
     const state = templates.getPoW(hash);
     if (!state) {
       if (DEBUG) this.monitoring.debug(`SharesManager ${this.port}: Stale header for miner ${minerId} and hash: ${hash}`);
-      metrics.updateGaugeInc(minerStaleShares, [minerId, address]);
       workerStats.staleShares++; // Add this to track stale shares in worker stats
       return;
     }
@@ -168,7 +165,6 @@ export class SharesManager {
     this.shareWindow.push(share);
     if (isBlock) {
       if (DEBUG) this.monitoring.debug(`SharesManager ${this.port}: Work found for ${minerId} and target: ${target}`);
-      metrics.updateGaugeInc(minerIsBlockShare, [minerId, address]);
       const report = await templates.submit(minerId, address, hash, nonce);
       if (report === "success") workerStats.blocksFound++;
     }
