@@ -1,7 +1,6 @@
 import { collectDefaultMetrics, register } from 'prom-client';
 import PQueue from 'p-queue';
 import Monitoring from '../monitoring';
-import Database from '../pool/database';
 import express from 'express';
 import client from 'prom-client';
 

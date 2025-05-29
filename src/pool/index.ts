@@ -43,7 +43,6 @@ export default class Pool {
   private stratum: Stratum[];
   private database: Database;
   private monitoring: Monitoring;
-  private pushMetrics: PushMetrics; // Add PushMetrics property
   private lastProcessedTimestamp = 0; // Add timestamp check
   private duplicateEventCount = 0;
 
@@ -58,7 +57,6 @@ export default class Pool {
 
     this.database = new Database(databaseUrl); // Change this line
     this.monitoring = monitoring;
-    this.pushMetrics = new PushMetrics(); // Initialize PushMetrics
 
     // this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
     this.treasury.on('coinbase', (minerReward: bigint, poolFee: bigint, reward_block_hash: string, txnId: string, daaScore: string) => {
