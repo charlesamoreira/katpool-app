@@ -7,7 +7,7 @@ import type Templates from './templates/index.ts';
 import { Address, type IRawHeader } from "../../wasm/kaspa";
 import { Encoding, encodeJob } from './templates/jobs/encoding.ts';
 import { SharesManager } from './sharesManager';
-import { minerjobSubmissions, jobsNotFound, activeMinerGuage, varDiff } from '../prometheus'
+import { jobsNotFound, activeMinerGuage, varDiff } from '../prometheus'
 import Monitoring from '../monitoring/index.ts';
 import { DEBUG } from '../../index';
 import { Mutex } from 'async-mutex';
@@ -297,7 +297,6 @@ export default class Stratum extends EventEmitter {
         }
         case 'mining.submit': {
           const [address, name] = request.params[0].split('.');
-          metrics.updateGaugeInc(minerjobSubmissions, [name, address]);
           if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Submitting job for Worker Name: ${name}`);
           const worker = socket.data.workers.get(name);
           if (DEBUG) this.monitoring.debug(`Stratum ${this.port}: Checking worker data on socket for : ${name}`);
