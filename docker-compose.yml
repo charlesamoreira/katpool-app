@@ -14,7 +14,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   postgres-migrate:
     image: postgres
@@ -30,7 +30,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"    
+        tag: '{{.Name}}'
     entrypoint: >
       sh -c "
       until pg_isready -U $POSTGRES_USER -h postgres; do
@@ -50,17 +50,17 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   kaspad:
     container_name: kaspad
     image: supertypo/rusty-kaspad:v1.0.0
     restart: unless-stopped
     ports:
-      - "16111:16111/tcp"
-      - "16110:16110/tcp" # gRPC
-      - "17110:17110/tcp" # wRPC (borsh)
-      - "18110:18110/tcp" # wRPC (json)
+      - '16111:16111/tcp'
+      - '16110:16110/tcp' # gRPC
+      - '17110:17110/tcp' # wRPC (borsh)
+      - '18110:18110/tcp' # wRPC (json)
     volumes:
       - /root/docker_deployment/kaspad_mainnet:/app/data/
     networks:
@@ -69,7 +69,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   # kaspad-test10: # REGULAR TESTNET
   #   container_name: kaspad-test10
@@ -110,7 +110,7 @@ services:
   #       tag: "{{.Name}}"
 
   go-app:
-    image: ghcr.io/nacho-the-kat/katpool-blocktemplate-fetcher:beta-v1.0.2-main  # Build the Go app from the ./app directory
+    image: ghcr.io/nacho-the-kat/katpool-blocktemplate-fetcher:beta-v1.0.2-main # Build the Go app from the ./app directory
     pull_policy: always
     container_name: go-app
     env_file:
@@ -126,7 +126,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   katpool-app:
     image: ghcr.io/nacho-the-kat/katpool-app:beta-v1.0.2-main
@@ -137,14 +137,14 @@ services:
       - redis
       - katpool-monitor
     ports:
-      - "1111:1111"
-      - "2222:2222"
-      - "3333:3333"
-      - "4444:4444"
-      - "5555:5555"
-      - "6666:6666"
-      - "7777:7777"
-      - "8888:8888"
+      - '1111:1111'
+      - '2222:2222'
+      - '3333:3333'
+      - '4444:4444'
+      - '5555:5555'
+      - '6666:6666'
+      - '7777:7777'
+      - '8888:8888'
     networks:
       - backend
     volumes:
@@ -156,7 +156,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   katpool-monitor:
     image: ghcr.io/nacho-the-kat/katpool-monitor:beta-v1.0.2-main
@@ -171,13 +171,13 @@ services:
     env_file:
       - .env
     ports:
-      - "9301:9301"
-      - "9300:9300"
+      - '9301:9301'
+      - '9300:9300'
     restart: always
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   katpool-payment:
     image: ghcr.io/nacho-the-kat/katpool-payment:beta-v1.0.2-main
@@ -197,7 +197,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
   prometheus:
@@ -219,7 +219,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   nginx:
     container_name: katpool-nginx
@@ -227,7 +227,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - "8080:8080"
+      - '8080:8080'
     networks:
       - backend
     depends_on:
@@ -237,7 +237,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
   katpool-backup:
     image: ghcr.io/nacho-the-kat/katpool-app-db-backup:beta-v1.0.2-main
@@ -259,7 +259,7 @@ services:
     logging:
       driver: journald
       options:
-        tag: "{{.Name}}"
+        tag: '{{.Name}}'
 
 networks:
   backend:

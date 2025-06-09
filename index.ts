@@ -1,24 +1,29 @@
-import { RpcClient, Encoding, Resolver, ConnectStrategy } from "./wasm/kaspa";
-import Treasury from "./src/treasury";
-import Templates from "./src/stratum/templates";
-import Stratum from "./src/stratum";
-import Pool from "./src/pool";
-import config from "./config/config.json";
+import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa';
+import Treasury from './src/treasury';
+import Templates from './src/stratum/templates';
+import Stratum from './src/stratum';
+import Pool from './src/pool';
+import config from './config/config.json';
 import dotenv from 'dotenv';
-import Monitoring from './src/monitoring'
-import { minerHashRateGauge, poolHashRateGauge, PushMetrics, startMetricsServer } from "./src/prometheus";
+import Monitoring from './src/monitoring';
+import {
+  minerHashRateGauge,
+  poolHashRateGauge,
+  PushMetrics,
+  startMetricsServer,
+} from './src/prometheus';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
-import { stringifyHashrate } from "./src/stratum/utils";
+import { stringifyHashrate } from './src/stratum/utils';
 
 async function shutdown() {
-  monitoring.log("\n\nMain: Gracefully shutting down the pool...");
+  monitoring.log('\n\nMain: Gracefully shutting down the pool...');
   try {
     await rpc.unsubscribeBlockAdded();
     await rpc.unsubscribeNewBlockTemplate();
     await treasury.unregisterProcessor();
-  } catch(error) {
+  } catch (error) {
     monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
   }
   monitoring.log('Graceful shutdown completed.');
@@ -28,11 +33,11 @@ async function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-process.on('exit', (code) => {
+process.on('exit', code => {
   monitoring.log(`Main: 🛑 Process is exiting with code: ${code}`);
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
   monitoring.error(`Main: Uncaught Exception: ${err}`);
 });
 
@@ -40,14 +45,14 @@ process.on('unhandledRejection', (reason, promise) => {
   monitoring.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
 });
 
-export let DEBUG = 0
-if (process.env.DEBUG == "1") {
+export let DEBUG = 0;
+if (process.env.DEBUG == '1') {
   DEBUG = 1;
 }
 
 export const statsInterval = 600000; // 10 minutes
-const RPC_RETRY_INTERVAL = 5 * 100 // 500 MILI SECONDS
-const RPC_TIMEOUT = 24 * 60 * 60 * 1000 // 24 HOURS
+const RPC_RETRY_INTERVAL = 5 * 100; // 500 MILI SECONDS
+const RPC_TIMEOUT = 24 * 60 * 60 * 1000; // 24 HOURS
 
 // Send config.json to API server
 async function sendConfig() {
@@ -72,7 +77,7 @@ async function sendConfig() {
 }
 
 const monitoring = new Monitoring();
-monitoring.log(`Main: Starting katpool App`)
+monitoring.log(`Main: Starting katpool App`);
 
 dotenv.config();
 
@@ -86,33 +91,34 @@ const rpc = new RpcClient({
 
 try {
   rpc.addEventListener('connect', async () => {
-    monitoring.debug('Main: RPC is reconnected');      
+    monitoring.debug('Main: RPC is reconnected');
     if (treasury && !treasury.reconnecting) {
       await treasury.reconnectBlockListener();
     }
-  })
-} catch(error) {
+  });
+} catch (error) {
   monitoring.error(`Main: Error during RPC connect: ${error}`);
 }
 
-rpc.addEventListener('disconnect', async (event) => {
+rpc.addEventListener('disconnect', async event => {
   monitoring.debug('Main: RPC is disconnected');
-})
+});
 
-try{  
+try {
   await rpc.connect({
     retryInterval: RPC_RETRY_INTERVAL, // timeinterval for reconnection
     timeoutDuration: RPC_TIMEOUT, // rpc timeout duration
     strategy: ConnectStrategy.Retry, // retry strategy for disconnection
   });
-} catch(err) {
-  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`)
+} catch (err) {
+  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`);
 }
 
-monitoring.log(`Main: RPC connection started`)
+monitoring.log(`Main: RPC connection started`);
 
 const serverInfo = await rpc.getServerInfo();
-if (!serverInfo.isSynced || !serverInfo.hasUtxoIndex) throw Error('Provided node is either not synchronized or lacks the UTXO index.');
+if (!serverInfo.isSynced || !serverInfo.hasUtxoIndex)
+  throw Error('Provided node is either not synchronized or lacks the UTXO index.');
 
 const treasuryPrivateKey = process.env.TREASURY_PRIVATE_KEY;
 if (!treasuryPrivateKey) {
@@ -130,58 +136,67 @@ const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, con
 export const stratums: Stratum[] = [];
 
 for (const stratumConfig of config.stratum) {
-    // Create Templates instance
-    const templates = new Templates(rpc, treasury.address, stratumConfig.templates.cacheSize, stratumConfig.port);
+  // Create Templates instance
+  const templates = new Templates(
+    rpc,
+    treasury.address,
+    stratumConfig.templates.cacheSize,
+    stratumConfig.port
+  );
 
-    // Create Stratum instance
-    const stratum = new Stratum(
-        templates, 
-        stratumConfig.difficulty, 
-        treasury.address, 
-        stratumConfig.sharesPerMinute,
-        stratumConfig.clampPow2,
-        stratumConfig.varDiff,
-        stratumConfig.extraNonceSize,
-        stratumConfig.minDiff,
-        stratumConfig.maxDiff,
-    );
+  // Create Stratum instance
+  const stratum = new Stratum(
+    templates,
+    stratumConfig.difficulty,
+    treasury.address,
+    stratumConfig.sharesPerMinute,
+    stratumConfig.clampPow2,
+    stratumConfig.varDiff,
+    stratumConfig.extraNonceSize,
+    stratumConfig.minDiff,
+    stratumConfig.maxDiff
+  );
 
-    // Store the stratums for later reference
-    stratums.push(stratum);
+  // Store the stratums for later reference
+  stratums.push(stratum);
 }
 
 export const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
 function calculatePoolHashrate() {
-    let totalRate = 0;
+  let totalRate = 0;
 
-    const addressHashrates: Map<string, number> = new Map();
-    let poolHashRate = 0;
-    
-    stratums.forEach((stratum) => {
-      stratum.sharesManager.getMiners().forEach((minerData, address) => {
-        let rate = 0;
-        minerData.workerStats.forEach((stats) => {
-          rate += stats.hashrate;
-        });
-    
-        // Aggregate rate per wallet address
-        const prevRate = addressHashrates.get(address) || 0;
-        const newRate = prevRate + rate;
-        addressHashrates.set(address, newRate);
+  const addressHashrates: Map<string, number> = new Map();
+  let poolHashRate = 0;
+
+  stratums.forEach(stratum => {
+    stratum.sharesManager.getMiners().forEach((minerData, address) => {
+      let rate = 0;
+      minerData.workerStats.forEach(stats => {
+        rate += stats.hashrate;
       });
-    });
-    
-    // Update metrics and compute pool total
-    addressHashrates.forEach((rate, address) => {
-      metrics.updateGaugeValue(minerHashRateGauge, [address], rate);
-      poolHashRate += rate;
-    });      
 
-    const rateStr = stringifyHashrate(poolHashRate);
-    metrics.updateGaugeValue(poolHashRateGauge, ['pool', stratums[0].sharesManager.poolAddress], poolHashRate);
-    monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
+      // Aggregate rate per wallet address
+      const prevRate = addressHashrates.get(address) || 0;
+      const newRate = prevRate + rate;
+      addressHashrates.set(address, newRate);
+    });
+  });
+
+  // Update metrics and compute pool total
+  addressHashrates.forEach((rate, address) => {
+    metrics.updateGaugeValue(minerHashRateGauge, [address], rate);
+    poolHashRate += rate;
+  });
+
+  const rateStr = stringifyHashrate(poolHashRate);
+  metrics.updateGaugeValue(
+    poolHashRateGauge,
+    ['pool', stratums[0].sharesManager.poolAddress],
+    poolHashRate
+  );
+  monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
 }
 
 // Set interval for subsequent updates

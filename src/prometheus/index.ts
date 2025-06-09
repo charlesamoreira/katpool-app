@@ -14,57 +14,56 @@ export { register };
 export const minerHashRateGauge = new client.Gauge({
   name: 'miner_hash_rate_GHps',
   help: 'Hash rate of each miner',
-  labelNames: ['wallet_address']
+  labelNames: ['wallet_address'],
 });
 
 export const activeMinerGuage = new client.Gauge({
   name: 'active_workers_10m_count',
   help: 'Active workers data',
-  labelNames: ['miner_id', 'wallet_address', 'asic_type']
+  labelNames: ['miner_id', 'wallet_address', 'asic_type'],
 });
 
 export const workerHashRateGauge = new client.Gauge({
   name: 'worker_hash_rate_GHps',
   help: 'Hash rate of worker',
-  labelNames: ['miner_id', 'wallet_address']
+  labelNames: ['miner_id', 'wallet_address'],
 });
 
 export const poolHashRateGauge = new client.Gauge({
   name: 'pool_hash_rate_GHps',
   help: 'Overall hash rate of the pool',
-  labelNames: ['miner_id', 'pool_address']
+  labelNames: ['miner_id', 'pool_address'],
 });
-
 
 export const minerAddedShares = new client.Gauge({
   name: 'added_miner_shares_1min_count',
   help: 'Added shares per miner',
-  labelNames: ['miner_id', 'wallet_address']
+  labelNames: ['miner_id', 'wallet_address'],
 });
 
 export const minerInvalidShares = new client.Gauge({
   name: 'miner_invalid_shares_1min_count',
   help: 'Invalid shares per miner',
-  labelNames: ['miner_id', 'wallet_address']
+  labelNames: ['miner_id', 'wallet_address'],
 });
 
 export const minerDuplicatedShares = new client.Gauge({
   name: 'miner_duplicated_shares_1min_count',
   help: 'Duplicated shares per miner',
-  labelNames: ['miner_id', 'wallet_address']
+  labelNames: ['miner_id', 'wallet_address'],
 });
 
 export const jobsNotFound = new client.Gauge({
   name: 'jobs_not_found_1min_count',
   help: 'Total jobs not Found for registered template',
-  labelNames: ['miner_id', 'wallet_address']
+  labelNames: ['miner_id', 'wallet_address'],
 });
 
 // Needed for debugging
 export const varDiff = new client.Gauge({
   name: 'var_diff',
   help: 'show the difficulty per miner over time',
-  labelNames: ['miner_id']
+  labelNames: ['miner_id'],
 });
 
 const newRegister = new client.Registry();

@@ -9,6 +9,7 @@ This guide will help you set up and run the project in a Docker environment usin
 Before proceeding, ensure you have the following installed:
 
 1. **Docker**:
+
    - Install Docker by following the official [Docker Installation Guide](https://docs.docker.com/get-docker/).
    - Verify the installation:
      ```bash
@@ -16,6 +17,7 @@ Before proceeding, ensure you have the following installed:
      ```
 
 2. **Docker Compose**:
+
    - Docker Compose is included with Docker Desktop for Windows and macOS. For Linux, install it separately:
      ```bash
      sudo apt install docker-compose
@@ -26,12 +28,14 @@ Before proceeding, ensure you have the following installed:
      ```
 
 3. **Git**:
+
    - To clone the project repository, install Git:
      ```bash
      sudo apt install git
      ```
 
 4. **Download Kaspa WASM**:
+
    - **IMPORTANT**: Download the latest WASM from [Kaspa Aspectron Nightly Builds](https://kaspa.aspectron.org/nightly/downloads/).
 
 5. **GitHub Personal Access Token**:
@@ -46,14 +50,16 @@ Before proceeding, ensure you have the following installed:
 ### 1. Clone the Repository
 
 Clone the project repository and navigate to the project directory:
+
 ```bash
 git clone <repository-url>
 cd <project-directory>
 ```
+
 Replace `<repository-url>` with the actual repository URL.
 
-   - Unzip the downloaded Kaspa WASM file and move the `nodejs` folder to the project repository. Rename it as `wasm` to match the structure expected by the code.
-   - Validate the location by checking the imports in the code.
+- Unzip the downloaded Kaspa WASM file and move the `nodejs` folder to the project repository. Rename it as `wasm` to match the structure expected by the code.
+- Validate the location by checking the imports in the code.
 
 ### 2. Review the Docker Compose File
 
@@ -62,17 +68,21 @@ Open the `docker-compose.yml` file and familiarize yourself with the services an
 ### 3. Build Docker Images
 
 To build the Docker images defined in the `Dockerfile`, run:
+
 ```bash
 docker-compose build
 ```
+
 This command will create the necessary images for the project.
 
 ### 4. Run the Services
 
 Start all the services defined in the `docker-compose.yml` file:
+
 ```bash
 docker-compose up
 ```
+
 - Add the `-d` flag to run in detached mode:
   ```bash
   docker-compose up -d
@@ -97,23 +107,31 @@ Once all services are running, you can access the application in your browser or
 ## Managing the Environment
 
 ### Stop the Services
+
 To stop all running services:
+
 ```bash
 docker-compose down
 ```
 
 ### Restart Specific Services
+
 To restart a specific service:
+
 ```bash
 docker-compose restart <service-name>
 ```
+
 Replace `<service-name>` with the name of the service from the `docker-compose.yml` file.
 
 ### Clean Up
+
 Remove unused Docker images, containers, and volumes to free up space:
+
 ```bash
 docker system prune -a
 ```
+
 > **Note**: This will remove **all** unused resources.
 
 ---
@@ -121,23 +139,31 @@ docker system prune -a
 ## Troubleshooting
 
 ### 1. Docker Daemon Not Running
+
 Ensure the Docker daemon is running. For Linux:
+
 ```bash
 sudo systemctl start docker
 ```
 
 ### 2. Port Conflicts
+
 If you encounter port conflicts, modify the `ports` section in `docker-compose.yml` to use different ports.
 
 ### 3. Permission Denied
+
 If you encounter permission issues, try running Docker commands with `sudo` or add your user to the `docker` group:
+
 ```bash
 sudo usermod -aG docker $USER
 ```
+
 Log out and log back in to apply the changes.
 
 ### 4. Check Logs
+
 For detailed error messages, check the container logs:
+
 ```bash
 docker-compose logs <service-name>
 ```
@@ -147,21 +173,25 @@ docker-compose logs <service-name>
 ## Additional Commands
 
 ### List Running Containers
+
 ```bash
 docker ps
 ```
 
 ### Stop a Specific Container
+
 ```bash
 docker stop <container-id>
 ```
 
 ### Remove a Container
+
 ```bash
 docker rm <container-id>
 ```
 
 ### Remove an Image
+
 ```bash
 docker rmi <image-id>
 ```
@@ -181,17 +211,19 @@ To ensure proper log management, you must make changes to the `journald` setting
 To make sure your logs do not grow **uncontrollably**, update the `journald` configuration by editing the `journald.conf` file. This is a **crucial step**, as logs can quickly become very large if not limited. Failure to manage log size might cause problems with disk space, as the logs continue to grow without restrictions.
 
 1. Open the `journald.conf` file for editing:
-    ```bash
-    sudo nano /etc/systemd/journald.conf
-    ```
+
+   ```bash
+   sudo nano /etc/systemd/journald.conf
+   ```
 
 2. Add or modify the following settings to ensure that the journal logs are controlled:
-    ```ini
-    [Journal]
-    Storage=persistent
-    SystemMaxFileSize=1000M  # Maximum size of individual journal files
-    SystemMaxFiles=20    # Number of archived journal files to keep
-    ```
+
+   ```ini
+   [Journal]
+   Storage=persistent
+   SystemMaxFileSize=1000M  # Maximum size of individual journal files
+   SystemMaxFiles=20    # Number of archived journal files to keep
+   ```
 
 3. Save and exit the editor.
 
@@ -208,7 +240,7 @@ sudo systemctl restart systemd-journald
 ```bash
 journalctl CONTAINER_NAME=<service-name>
 
-journalctl CONTAINER_NAME=<service-name> -f 
+journalctl CONTAINER_NAME=<service-name> -f
 
 journalctl -u docker -f
 
@@ -224,4 +256,3 @@ journalctl -u <service-name> -n 100
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Common Docker Commands Cheat Sheet](https://dockerlabs.collabnix.com/docker/cheatsheet/)
-
