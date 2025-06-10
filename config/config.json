@@ -1,117 +1,119 @@
 {
-  "node" : [],
-  "network" : "mainnet",
-  "pool_id" : "us-katpool1",
-  "location" : "us-east",
-  "hostname" : "kas.katpool.xyz",  
+  "node": [],
+  "network": "mainnet",
+  "pool_id": "us-katpool1",
+  "location": "us-east",
+  "hostname": "kas.katpool.xyz",
   "block_wait_time_milliseconds": "1000",
-  "redis_address" : "redis:6379",
+  "redis_address": "redis:6379",
   "redis_channel": "NewBlockTemplateChannel",
-  "miner_info":"Katpool",
-  "stratum": [{
-    "port": 8888,
-    "templates": {
-      "cacheSize": 300
+  "miner_info": "Katpool",
+  "stratum": [
+    {
+      "port": 8888,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 2048,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": true,
+      "minDiff": 64,
+      "maxDiff": 131072
     },
-    "difficulty": 2048,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": true,
-    "minDiff": 64,
-    "maxDiff": 131072
-  },
-  {
-    "port": 1111,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 1111,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 256,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 256,
+      "maxDiff": 512
     },
-    "difficulty": 256,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 256,
-    "maxDiff": 512
-  },
-  {
-    "port": 2222,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 2222,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 1024,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 512,
+      "maxDiff": 1024
     },
-    "difficulty": 1024,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 512,
-    "maxDiff": 1024
-  },
-  {
-    "port": 3333,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 3333,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 4096,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 2048,
+      "maxDiff": 4096
     },
-    "difficulty": 4096,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 2048,
-    "maxDiff": 4096
-  },
-  {
-    "port": 4444,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 4444,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 8192,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 4096,
+      "maxDiff": 8192
     },
-    "difficulty": 8192,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 4096,
-    "maxDiff": 8192
-  },
-  {
-    "port": 5555,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 5555,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 16384,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 16384,
+      "maxDiff": 32768
     },
-    "difficulty": 16384,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 16384,
-    "maxDiff": 32768
-  },
-  {
-    "port": 6666,
-    "templates": {
-      "cacheSize": 300
+    {
+      "port": 6666,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 32768,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 32768,
+      "maxDiff": 65536
     },
-    "difficulty": 32768,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 32768,
-    "maxDiff": 65536
-  },
-  {
-    "port": 7777,
-    "templates": {
-      "cacheSize": 300
-    },
-    "difficulty": 65536,
-    "sharesPerMinute": 10,
-    "extraNonceSize": 2, 
-    "clampPow2": true,
-    "varDiff": false,
-    "minDiff": 65536,
-    "maxDiff": 131072
-  }],
+    {
+      "port": 7777,
+      "templates": {
+        "cacheSize": 300
+      },
+      "difficulty": 65536,
+      "sharesPerMinute": 10,
+      "extraNonceSize": 2,
+      "clampPow2": true,
+      "varDiff": false,
+      "minDiff": 65536,
+      "maxDiff": 131072
+    }
+  ],
   "treasury": {
     "fee": 0.75,
     "nachoRebate": 33
@@ -120,7 +122,7 @@
   "backupCronSchedule": "0 */12 * * *",
   "payoutAlertCronSchedule": "0 1,7,13,19 * * *",
   "thresholdAmount": "500000000",
-  "nachoThresholdAmount": "50000000000",   
+  "nachoThresholdAmount": "50000000000",
   "kasAlertThreshold": "25000000000",
   "nachoAlertThreshold": "100000000000",
   "nachoSwap": 95,

@@ -1,22 +1,22 @@
-import Monitoring from "../../../monitoring";
+import Monitoring from '../../../monitoring';
 
 const monitoring = new Monitoring();
 
 export default class Jobs {
-  private jobs: Map<string, string> = new Map()
+  private jobs: Map<string, string> = new Map();
   static rewardMapping: Map<string, bigint> = new Map();
 
   getHash(id: string) {
-    return this.jobs.get(id)
+    return this.jobs.get(id);
   }
 
   deriveId(hash: string): string {
-    const id = crypto.getRandomValues(Buffer.alloc(2)).toString('hex')
+    const id = crypto.getRandomValues(Buffer.alloc(2)).toString('hex');
     if (this.jobs.has(id)) {
-      return this.deriveId(hash)
+      return this.deriveId(hash);
     }
-    this.jobs.set(id, hash)
-    return id
+    this.jobs.set(id, hash);
+    return id;
   }
 
   static setJobIdDaaScoreMapping(id: string, daaScore: bigint) {
@@ -37,6 +37,6 @@ export default class Jobs {
   }
 
   expireNext() {
-    this.jobs.delete(this.jobs.entries().next().value![0])
+    this.jobs.delete(this.jobs.entries().next().value![0]);
   }
 }
