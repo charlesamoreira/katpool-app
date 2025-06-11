@@ -206,6 +206,8 @@ services:
     container_name: katpool-prmths
     depends_on:
       - postgres
+    ports:
+      - '9090:9090' # Expose for external access
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - /root/docker_deployment/prometheus_data:/prometheus
