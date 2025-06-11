@@ -8,13 +8,29 @@ The shares are validated, and their difficulty is checked. Valid shares are coun
 
 We are fetching Block templates from GRPC endpoint. This is done through a Go-script. And this templates are passed on to a Redis channel.
 
-## Download Kaspa WASM
+## Download Kaspa WASM SDK
 
-** IMPORTANT **
-Before anything, add wasm foolder to the local folder
-You can download the latest form here: https://kaspa.aspectron.org/nightly/downloads/ move nodejs to the repo folder as wasm
-unzip, rename and move `nodejs` that contains `kaspa` and kaspa-dev`to`wasm` folder locally.
-Validate the location with the imports in the code.
+**Note:** This setup is intended for **local development only**.
+
+### Steps:
+
+1. Download the latest Kaspa WASM SDK from the official Rusty-Kaspa GitHub releases:
+   [rusty-kaspa/releases](https://github.com/kaspanet/rusty-kaspa/releases)
+
+2. Locate and download the file named:
+kaspa-wasm32-sdk-<LATEST_VERSION>.zip
+
+Example: `kaspa-wasm32-sdk-v1.0.0.zip`
+
+3. Extract the archive and locate the `nodejs` directory inside it.
+
+4. Rename the extracted `nodejs` folder to `wasm` and place it inside your project repository.
+
+The folder should contain:
+- `kaspa`
+- `kaspa-dev`
+
+5. Ensure that the import paths in your code correctly reference the local `wasm` folder.
 
 ## Docker Compose
 
@@ -24,35 +40,50 @@ The recommended installation is via docker compose. There are many instances tha
 
 ### Container Instances
 
-- Katpool-app: _main app_ and object of this repository
-- Katpool-db: postgres DB
-- Katpool-backup: performs db dumps and uploads these dumps to google drive.
-- [Katpool-monitor](https://github.com/Nacho-the-Kat/katpool-monitor): taking the initial config from Katpool and sharing miner balances and total to prometheus and via APIs.
-- prometheus: pulls metrics from Katpool and displaying metrics of the pool
-- [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using _gRPC_ connection and sends them over redis channel. Katpool-app fetches templates from Redis channel.
-- redis: Receives block templates from go-app. This Redis channel is subscribed by Katpool-app.
-- [Katpool-payment](https://github.com/Nacho-the-Kat/katpool-payment): taking balances from the database and distibuting payments
+- **kaspad**  
+  Kaspa full node.
+
+- **katpool-app**  
+  Main application. This is the core component of the repository.
+
+- **katpool-db**  
+  PostgreSQL database instance.
+
+- **katpool-db-migrate**  
+  Handles database schema changes such as altering and adding new tables.
+
+- **katpool-backup**  
+  Performs regular database dumps and uploads them to Google Drive.
+
+- **[katpool-monitor](https://github.com/Nacho-the-Kat/katpool-monitor)**  
+  Initializes with configuration from `katpool-app`, shares miner balances and totals as Prometheus metrics, and serves Express REST APIs.
+
+- **prometheus**  
+  Pulls metrics from `katpool-monitor` and visualizes pool statistics.
+
+- **[go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher)**  
+  Fetches new block templates from the Kaspa network via gRPC and publishes them to a Redis channel. `katpool-app` listens to this channel.
+
+- **redis**  
+  Acts as a messaging channel between `go-app` and `katpool-app` for block templates.
+
+- **[katpool-payment](https://github.com/Nacho-the-Kat/katpool-payment)**  
+  Handles payment processing. Reads balances from the database and distributes payouts.
+
+- **nginx**  
+  Serves as the reverse proxy for routing incoming HTTP requests to appropriate services.
 
 ### Create env variables
 
-create .env file
+### Environment Configuration Notes
 
-```
-TREASURY_PRIVATE_KEY=<private key>
-POSTGRES_USER=<db-user>
-POSTGRES_PASSWORD=<db-passwd>
-POSTGRES_DB=<db-name>
-POSTGRES_HOSTNAME='katpool-db' # Configure the hostname.
-DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOSTNAME}:5432/${POSTGRES_DB}"
-MONITOR="http://katpool-monitor:9302" # Configure the monitor url.
-DEBUG=1
-```
+All application instances currently use the same environment variables defined in the `.env` file. A sample template is provided in `.env.sample` for reference.
 
-For now, all the instances share the same env var. However, in the future, it's better to set the private key to the payment app. katpool-app instance won't need it.
+In the future, it is recommended to isolate certain environment variables based on the application’s role. Specifically, the private key should be assigned only to the `payment` app. The `katpool-app` instance does not require access to this key and should not be granted it for security and clarity of responsibility.
+
+This separation will improve security, reduce unnecessary exposure, and better align with the principle of least privilege.
 
 ### requires folders and files
-
-Create `postgres_data` folder at the repository root location for the postgres data files, and make that info persistant between restarts, and ensure the following files are present:
 
 - prometheus.yml: prometheus scrape configuration
 - init.sql: to setup the database the first time it's started
@@ -60,10 +91,6 @@ Create `postgres_data` folder at the repository root location for the postgres d
 - nginx.conf
 - config
 - **wasm** folder must the also available. Check download link above [For running outside Docker container]
-
-Additionally:
-
-- **prometheus_data** folder: Optionally you can uncomment prometheus_data in docker_compose.yml to bring persistency between restarts. Prometheus requires writes and read permissions.
 
 ### Configuration
 
@@ -91,28 +118,50 @@ Additionally:
 
   * **extraNonceSize** The value should be between 0 to 3.
 
-  * Here please prepend your own **node**. This has to be **GRPC endpoint**.
-
-    - If it fails, you can update the code in `index.ts` as
-
-```JS
-const rpc = new RpcClient({
-  resolver: new Resolver(), // Random assignment
-  encoding: Encoding.Borsh,
-  networkId: config.network,
-});
-```
-
 ### Container Images
 
-We have added public images to docker-compose.yml to make ieasier the deployment, but in case you want to do changes to the code and test it, you can create your own local image via:
+We provide a `docker-compose.yml` setup for easier deployment. However, since this is an open-source project and no pre-built container images are published, you are expected to build the images locally and update the image URLs accordingly.
+
+To build the `katpool-app` image locally, run the following command from the root of the repository (where the `Dockerfile` is located):
 
 ```
-docker build -t katpool-app:0.65 .
+docker build -t ghcr.io/<your-ghcr-username>/katpool-app:0.65 .
 ```
 
-Dockerfile must be present int the same location where you are running this command.
-remember to modify docker-image.yml with your own image.
+Once built, make sure to push the image to your GitHub Container Registry (GHCR) or your preferred container registry.
+
+Then, update the `docker-compose.yml` and any relevant deployment files to use your own image:
+
+```yaml
+image: ghcr.io/<your-ghcr-username>/katpool-app:0.65
+```
+
+## Mining Port Configuration
+
+The mining pool supports multiple static difficulty ports, defined in the `config/config.json` file.
+
+### Stratum Difficulty Ports
+
+Each port is mapped to a specific difficulty level. This enables miners to choose a port appropriate for their hardware.
+
+- **Port 8888** supports **variable difficulty**, starting at 2048 and automatically adjusting based on miner performance.
+- Miners can also set a **custom difficulty** on port 8888 using the `password` field during connection. This overrides the assigned difficulty.
+
+**Example usage:**
+password: x d=2048
+
+
+### Example Port Configuration
+
+```json
+"ports": {
+  "8888": { "difficulty": 2048 },
+  "1111": { "difficulty": 256 },
+  "2222": { "difficulty": 1024 }
+}
+```
+
+- **Note**: Ports with static difficulty (e.g., 1111, 2222) cannot be overridden via the password field.
 
 ### Start and check the pool
 
@@ -177,65 +226,48 @@ To install dependencies:
 bun install
 ```
 
-## How the go-script is run
+## Database Setup
 
-This go-script needs to be kept running along the pool.
+We use **PostgreSQL** as the database for Katpool. The initial schema is provided in the `init.sql` file located in the project repository. You can use this script to initialize your own database instance.
 
-Build the binary
+### Running the init.sql script
 
-```
-cd katpool-app/go/
-go build .
-```
-
-Run the binary
+To create the necessary tables, you can run the following command after setting up PostgreSQL:
 
 ```
-./getNewBlockTemplate
+psql -U <your-db-user> -d <your-db-name> -f init.sql
 ```
 
-## How the Database is setup
+Make sure the database and user already exist and have the appropriate privileges.
 
-We are using Postgres as our database:
+### Prerequisites Before Running the App
 
-```sql
-CREATE TABLE IF NOT EXISTS miners_balance (
-  id VARCHAR(255) PRIMARY KEY,
-  miner_id VARCHAR(255),
-  wallet VARCHAR(255),
-  balance NUMERIC
-);
+Before starting the application, ensure the following steps are completed:
 
-CREATE TABLE IF NOT EXISTS wallet_total (
-  address VARCHAR(255) PRIMARY KEY,
-  total NUMERIC
-);
+1. Populate the required environment variables in a `.env` file.
+2. Ensure the WASM SDK is correctly placed in the `wasm` folder (see the [WASM setup section](#download-kaspa-wasm) for more info).
+3. Verify that the following services are up and running:
+   - `kaspad`: Kaspa full node
+   - `katpool-app`: Main application service
+   - `katpool-db`: PostgreSQL database instance
+   - `katpool-db-migrate`: Used to create/alter tables
+   - `katpool-backup`: Periodically dumps DB and uploads to Google Drive
+   - `katpool-monitor`: Exposes Prometheus metrics and serves APIs
+   - `go-app`: Fetches block templates from Kaspa network over gRPC and publishes to Redis
+   - `redis`: Used for inter-service messaging (e.g., block templates)
+   - `katpool-payment`: Distributes miner rewards based on DB balances
+   - `prometheus`: Collects metrics from monitor service
+   - `nginx`: Acts as a reverse proxy and load balancer
 
-CREATE TABLE IF NOT EXISTS payments (
-    id SERIAL PRIMARY KEY,
-    wallet_address TEXT[] NOT NULL,
-    amount BIGINT NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    transaction_hash VARCHAR(255) NOT NULL
-);
+### Running the Application
 
-CREATE TABLE IF NOT EXISTS block_details (
-    mined_block_hash VARCHAR(255) PRIMARY KEY,
-    miner_id VARCHAR(255),
-    pool_address VARCHAR(255),
-    reward_block_hash VARCHAR(255),
-    wallet VARCHAR(255),
-    daa_score VARCHAR(255),
-    miner_reward BIGINT NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW()
-);
+Once everything is set up, start the application using:
+
+```
+bun run index.ts
 ```
 
-To run:
-
-```bash
-TREASURY_PRIVATE_KEY=<private_key> DATABASE_URL='postgresql://<psql_user>:<psql_password>@<psql_hostname>:5432/<psql_db>' bun run index.ts
-```
+This will launch the main `katpool-app` service. Along with necessary setup.
 
 ## Additonal notes
 
@@ -290,7 +322,9 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
 ### Example Cycle
 
 1. **Server Starts**: The server starts and listens for miners.
-2. **Fetch Template**: The server gets a block template from Kaspa.
+2. **Fetch Template**:  
+   Block templates are fetched from the Kaspa network by the `go-app` service using a gRPC connection.  
+   These templates are then published to a Redis channel, which is subscribed to by the `katpool-app` service.  
 3. **Create Job**: The server creates a job from the template.
 4. **Distribute Job**: The job is sent to miners.
 5. **Miners Work**: Miners start finding a valid nonce.
