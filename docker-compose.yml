@@ -215,7 +215,7 @@ services:
       - backend
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-#     - '--web.enable-admin-api' # This was used to fetch snapshots.
+      #     - '--web.enable-admin-api' # This was used to fetch snapshots.
       - '--web.enable-remote-write-receiver'
       - '--storage.tsdb.retention.time=12w' # Retain data for 12 week = 3 months
       # Retention time defaults to 15d. Supported units: y, w, d, h, m, s, ms.
@@ -265,6 +265,14 @@ services:
       options:
         tag: '{{.Name}}'
 
+  kaspa-hashrate-indexer:
+    image: kaspa-hashrate-indexer
+    container_name: kaspa-hashrate-indexer
+    networks:
+      - backend
+    ports:
+      - '3000:3000'
+
   katpool-victoria-metrics:
     image: victoriametrics/victoria-metrics:v1.93.4
     container_name: katpool-victoria-metrics
@@ -305,7 +313,7 @@ services:
     volumes:
       - ./vmagent.yml:/etc/vmagent.yml
 
-  # This is a one-time migration.  
+  # This is a one-time migration.
   # This service was used to migrate Prometheus metrics to VictoriaMetrics.
   # katpool-vmctl-migration:
   #   image: victoriametrics/vmctl:v1.93.4
