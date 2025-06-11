@@ -233,8 +233,7 @@ services:
     networks:
       - backend
     depends_on:
-      - prometheus
-      # - katpool-victoria-metrics # Uncomment when removing Prometheus.
+      - katpool-victoria-metrics
       - katpool-monitor
     restart: always
     logging:
@@ -293,37 +292,36 @@ services:
       options:
         tag: '{{.Name}}'
 
-  # Uncomment when removing Prometheus. 
-  # katpool-vmagent:
-  #   image: victoriametrics/vmagent:v1.97.0
-  #   container_name: katpool-vmagent
-  #   command:
-  #     - '-promscrape.config=/etc/vmagent.yml'
-  #     - '-remoteWrite.url=http://katpool-victoria-metrics:8428/api/v1/write'
-  #   networks:
-  #     - backend
-  #   volumes:
-  #     - ./vmagent.yml:/etc/vmagent.yml
-
-  # Comment this out when removing Prometheus. This is a one-time migration.  
-  # This service was used to migrate Prometheus metrics to VictoriaMetrics.
-  katpool-vmctl-migration:
-    image: victoriametrics/vmctl:v1.93.4
-    container_name: katpool-vmctl-migration
-    command: >
-      prometheus
-      -s
-      --vm-addr=http://katpool-victoria-metrics:8428/
-      --prom-snapshot=/prometheus/data/snapshots/20250610T091409Z-6d277dbc1dba37dc
-      --prom-filter-label=__name__ \
-      --prom-filter-label-value='^(worker_hash_rate_GHps|pool_hash_rate_GHps|miner_hash_rate_GHps)$'
+  katpool-vmagent:
+    image: victoriametrics/vmagent:v1.97.0
+    container_name: katpool-vmagent
+    command:
+      - '-promscrape.config=/etc/vmagent.yml'
+      - '-remoteWrite.url=http://katpool-victoria-metrics:8428/api/v1/write'
     networks:
       - backend
-    volumes_from:
-      - prometheus:ro
-    stdin_open: true
-    tty: true
-    restart: 'no' # optional, since it's a one-time migration
+    volumes:
+      - ./vmagent.yml:/etc/vmagent.yml
+
+  # This is a one-time migration.  
+  # This service was used to migrate Prometheus metrics to VictoriaMetrics.
+  # katpool-vmctl-migration:
+  #   image: victoriametrics/vmctl:v1.93.4
+  #   container_name: katpool-vmctl-migration
+  #   command: >
+  #     prometheus
+  #     -s
+  #     --vm-addr=http://katpool-victoria-metrics:8428/
+  #     --prom-snapshot=/prometheus/data/snapshots/20250610T091409Z-6d277dbc1dba37dc
+  #     --prom-filter-label=__name__ \
+  #     --prom-filter-label-value='^(worker_hash_rate_GHps|pool_hash_rate_GHps|miner_hash_rate_GHps)$'
+  #   networks:
+  #     - backend
+  #   volumes_from:
+  #     - prometheus:ro
+  #   stdin_open: true
+  #   tty: true
+  #   restart: 'no' # optional, since it's a one-time migration
 
 networks:
   backend:
