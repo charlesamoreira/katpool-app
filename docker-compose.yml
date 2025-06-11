@@ -233,6 +233,7 @@ services:
       - backend
     depends_on:
       - prometheus
+      # - katpool-victoria-metrics # Uncomment when removing Prometheus.
       - katpool-monitor
     restart: always
     logging:
@@ -291,6 +292,7 @@ services:
       options:
         tag: '{{.Name}}'
 
+  # Uncomment when removing Prometheus. 
   # katpool-vmagent:
   #   image: victoriametrics/vmagent:v1.97.0
   #   container_name: katpool-vmagent
@@ -302,6 +304,8 @@ services:
   #   volumes:
   #     - ./vmagent.yml:/etc/vmagent.yml
 
+  # Comment this out when removing Prometheus. This is a one-time migration.  
+  # This service was used to migrate Prometheus metrics to VictoriaMetrics.
   katpool-vmctl-migration:
     image: victoriametrics/vmctl:v1.93.4
     container_name: katpool-vmctl-migration
