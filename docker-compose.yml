@@ -206,6 +206,8 @@ services:
     container_name: katpool-prmths
     depends_on:
       - postgres
+    ports:
+      - '9090:9090' # Expose for external access
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - /root/docker_deployment/prometheus_data:/prometheus
@@ -213,6 +215,8 @@ services:
       - backend
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+#     - '--web.enable-admin-api' # This was used to fetch snapshots.
+      - '--web.enable-remote-write-receiver'
       - '--storage.tsdb.retention.time=12w' # Retain data for 12 week = 3 months
       # Retention time defaults to 15d. Supported units: y, w, d, h, m, s, ms.
     restart: always
@@ -231,7 +235,7 @@ services:
     networks:
       - backend
     depends_on:
-      - prometheus
+      - katpool-victoria-metrics
       - katpool-monitor
     restart: always
     logging:
@@ -260,6 +264,66 @@ services:
       driver: journald
       options:
         tag: '{{.Name}}'
+
+  katpool-victoria-metrics:
+    image: victoriametrics/victoria-metrics:v1.93.4
+    container_name: katpool-victoria-metrics
+    depends_on:
+      - postgres
+    volumes:
+      - /root/docker_deployment/victoria_data:/victoria-metrics-data
+    networks:
+      - backend
+    ports:
+      - '8428:8428' # Expose for external access and vmctl
+    command:
+      - '-storageDataPath=/victoria-metrics-data'
+      - '-retentionPeriod=12w'
+      - '-httpListenAddr=:8428'
+      - '-memory.allowedPercent=60'
+      - '-search.maxConcurrentRequests=8'
+      - '-search.maxQueryDuration=60s'
+      - '--search.maxSeries=500000000'
+      - '--search.maxUniqueTimeseries=500000000'
+      - '--search.maxSamplesPerQuery=500000000' # default: 1e9
+      - '--search.maxPointsPerTimeseries=500000000' # increase if long ranges
+    stop_grace_period: 30s
+    restart: always
+    logging:
+      driver: journald
+      options:
+        tag: '{{.Name}}'
+
+  katpool-vmagent:
+    image: victoriametrics/vmagent:v1.97.0
+    container_name: katpool-vmagent
+    command:
+      - '-promscrape.config=/etc/vmagent.yml'
+      - '-remoteWrite.url=http://katpool-victoria-metrics:8428/api/v1/write'
+    networks:
+      - backend
+    volumes:
+      - ./vmagent.yml:/etc/vmagent.yml
+
+  # This is a one-time migration.  
+  # This service was used to migrate Prometheus metrics to VictoriaMetrics.
+  # katpool-vmctl-migration:
+  #   image: victoriametrics/vmctl:v1.93.4
+  #   container_name: katpool-vmctl-migration
+  #   command: >
+  #     prometheus
+  #     -s
+  #     --vm-addr=http://katpool-victoria-metrics:8428/
+  #     --prom-snapshot=/prometheus/data/snapshots/20250610T091409Z-6d277dbc1dba37dc
+  #     --prom-filter-label=__name__ \
+  #     --prom-filter-label-value='^(worker_hash_rate_GHps|pool_hash_rate_GHps|miner_hash_rate_GHps)$'
+  #   networks:
+  #     - backend
+  #   volumes_from:
+  #     - prometheus:ro
+  #   stdin_open: true
+  #   tty: true
+  #   restart: 'no' # optional, since it's a one-time migration
 
 networks:
   backend:
