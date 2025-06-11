@@ -75,8 +75,6 @@ The recommended installation is via docker compose. There are many instances tha
 
 ### Create env variables
 
-### Environment Configuration Notes
-
 All application instances currently use the same environment variables defined in the `.env` file. A sample template is provided in `.env.sample` for reference.
 
 In the future, it is recommended to isolate certain environment variables based on the application’s role. Specifically, the private key should be assigned only to the `payment` app. The `katpool-app` instance does not require access to this key and should not be granted it for security and clarity of responsibility.
