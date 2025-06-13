@@ -278,7 +278,7 @@ services:
       - '8428:8428' # Expose for external access and vmctl
     command:
       - '-storageDataPath=/victoria-metrics-data'
-      - '-retentionPeriod=12w'
+      - '-retentionPeriod=1y'
       - '-httpListenAddr=:8428'
       - '-memory.allowedPercent=60'
       - '-search.maxConcurrentRequests=8'
