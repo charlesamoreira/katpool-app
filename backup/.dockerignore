@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+
+# Node & Bun stuff
+node_modules/
+bun*
+bun.lockb
+package-lock.json
+
+# Build/output artifacts
+wasm/
+wasm.nacho/
+storage/
+db_backup*
+getNewBlockTemplate
+katpool-app-logs.txt
+
+# Environment and secrets
+.env
+.env.local
+.secrets
+google-credentials.json
+
+# Local databases, postgres
+postgres*
+prometheus_data
+
+# Runtime logs & temp data
+logs/
+katpool-app-logs/
+*.log
+*.log.*
+.*.json
+backup/files
+
+# Workspace and misc dev files
+katpool.code-workspace
+IMPROVEMENTS.md
+
+# Examples and local dev-only folders
+examples

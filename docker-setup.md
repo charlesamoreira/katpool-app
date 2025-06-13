@@ -34,10 +34,6 @@ Before proceeding, ensure you have the following installed:
      sudo apt install git
      ```
 
-4. **Download Kaspa WASM**:
-
-   - **IMPORTANT**: Download the latest WASM from [Kaspa Aspectron Nightly Builds](https://kaspa.aspectron.org/nightly/downloads/).
-
 5. **GitHub Personal Access Token**:
    - Create a Personal Access Token following [GitHub's Guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
    - Update your username at Docker Login step in `./github/workflows/docker-image.yml`.
@@ -57,9 +53,6 @@ cd <project-directory>
 ```
 
 Replace `<repository-url>` with the actual repository URL.
-
-- Unzip the downloaded Kaspa WASM file and move the `nodejs` folder to the project repository. Rename it as `wasm` to match the structure expected by the code.
-- Validate the location by checking the imports in the code.
 
 ### 2. Review the Docker Compose File
 
@@ -116,13 +109,23 @@ docker-compose down
 
 ### Restart Specific Services
 
-To restart a specific service:
+To restart a specific service without restarting its dependencies, use the following command:
 
 ```bash
-docker-compose restart <service-name>
+docker compose up --no-deps <service-name> -d
 ```
 
 Replace `<service-name>` with the name of the service from the `docker-compose.yml` file.
+
+#### Use Case
+
+- This command is particularly useful when you need to:
+
+  - Restart a single container (e.g., katpool-app, katpool-monitor) after code or config changes.
+  
+  - Avoid restarting dependent services such as Redis, Postgres, or Prometheus.
+
+  - Minimize downtime and resource usage during development or maintenance.
 
 ### Clean Up
 

@@ -1,6 +1,6 @@
 # version 0.4
 services:
-  postgres:
+  katpool-db:
     image: postgres
     container_name: katpool-db
     networks:
@@ -16,7 +16,7 @@ services:
       options:
         tag: '{{.Name}}'
 
-  postgres-migrate:
+  katpool-db-migrate:
     image: postgres
     container_name: katpool-db-migrate
     networks:
@@ -200,7 +200,7 @@ services:
         tag: '{{.Name}}'
 
   # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
-  prometheus:
+  katpool-prmths:
     image: prom/prometheus
     user: root
     container_name: katpool-prmths
@@ -225,7 +225,7 @@ services:
       options:
         tag: '{{.Name}}'
 
-  nginx:
+  katpool-nginx:
     container_name: katpool-nginx
     image: nginx:latest
     volumes:
@@ -278,7 +278,7 @@ services:
       - '8428:8428' # Expose for external access and vmctl
     command:
       - '-storageDataPath=/victoria-metrics-data'
-      - '-retentionPeriod=12w'
+      - '-retentionPeriod=1y'
       - '-httpListenAddr=:8428'
       - '-memory.allowedPercent=60'
       - '-search.maxConcurrentRequests=8'
