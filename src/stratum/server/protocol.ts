@@ -83,18 +83,18 @@ export function validateRequest(request: any): request is Request {
   );
 }
 
-export function parseMessage(message: string) {
+export function parseMessage(message: string, port: number) {
   try {
     const parsedMessage = JSON.parse(message);
 
     if (!validateRequest(parsedMessage)) {
-      monitoring.error(`protoco: Rejected - invalid structure ${message.slice(0, 100)}`);
+      monitoring.error(`protocol ${port}: Rejected - invalid structure ${message.slice(0, 100)}`);
       return undefined;
     }
 
     return parsedMessage;
   } catch (error) {
-    monitoring.error(`protocol: JSON parse failed: ${message.slice(0, 100)} - ${error}`);
+    monitoring.error(`protocol ${port}: JSON parse failed: ${message.slice(0, 100)} - ${error}`);
     return undefined;
   }
 }

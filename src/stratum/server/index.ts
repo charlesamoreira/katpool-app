@@ -88,7 +88,7 @@ export default class Server {
     const messages = socket.data.cachedBytes.split('\n');
 
     while (messages.length > 1) {
-      const message = parseMessage(messages.shift()!);
+      const message = parseMessage(messages.shift()!, this.port);
 
       if (message) {
         this.onMessage(socket, message)
