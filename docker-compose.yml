@@ -22,7 +22,7 @@ services:
     networks:
       - backend
     depends_on:
-      - postgres
+      - katpool-db
     volumes:
       - ./migration.sql:/migration.sql
     env_file:
@@ -133,7 +133,7 @@ services:
     pull_policy: always
     container_name: katpool-app
     depends_on:
-      - postgres
+      - katpool-db
       - redis
       - katpool-monitor
     ports:
@@ -163,7 +163,7 @@ services:
     pull_policy: always
     container_name: katpool-monitor
     depends_on:
-      - postgres
+      - katpool-db
     networks:
       - backend
     volumes:
@@ -184,7 +184,7 @@ services:
     pull_policy: always
     container_name: katpool-payment
     depends_on:
-      - postgres
+      - katpool-db
     volumes:
       - ./config:/app/config
       - /root/docker_deployment/data/:/app/data/
@@ -205,7 +205,7 @@ services:
     user: root
     container_name: katpool-prmths
     depends_on:
-      - postgres
+      - katpool-db
     ports:
       - '9090:9090' # Expose for external access
     volumes:
@@ -215,7 +215,7 @@ services:
       - backend
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-#     - '--web.enable-admin-api' # This was used to fetch snapshots.
+      #     - '--web.enable-admin-api' # This was used to fetch snapshots.
       - '--web.enable-remote-write-receiver'
       - '--storage.tsdb.retention.time=12w' # Retain data for 12 week = 3 months
       # Retention time defaults to 15d. Supported units: y, w, d, h, m, s, ms.
@@ -248,7 +248,7 @@ services:
     pull_policy: always
     container_name: katpool-backup
     depends_on:
-      - postgres
+      - katpool-db
     env_file:
       - .env
     volumes:
@@ -269,7 +269,7 @@ services:
     image: victoriametrics/victoria-metrics:v1.93.4
     container_name: katpool-victoria-metrics
     depends_on:
-      - postgres
+      - katpool-db
     volumes:
       - /root/docker_deployment/victoria_data:/victoria-metrics-data
     networks:
@@ -305,7 +305,7 @@ services:
     volumes:
       - ./vmagent.yml:/etc/vmagent.yml
 
-  # This is a one-time migration.  
+  # This is a one-time migration.
   # This service was used to migrate Prometheus metrics to VictoriaMetrics.
   # katpool-vmctl-migration:
   #   image: victoriametrics/vmctl:v1.93.4

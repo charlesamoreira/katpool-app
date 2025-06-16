@@ -18,7 +18,7 @@ We are fetching Block templates from GRPC endpoint. This is done through a Go-sc
    [rusty-kaspa/releases](https://github.com/kaspanet/rusty-kaspa/releases)
 
 2. Locate and download the file named:
-kaspa-wasm32-sdk-<LATEST_VERSION>.zip
+   kaspa-wasm32-sdk-<LATEST_VERSION>.zip
 
 Example: `kaspa-wasm32-sdk-v1.0.0.zip`
 
@@ -27,6 +27,7 @@ Example: `kaspa-wasm32-sdk-v1.0.0.zip`
 4. Rename the extracted `nodejs` folder to `wasm` and place it inside your project repository.
 
 The folder should contain:
+
 - `kaspa`
 - `kaspa-dev`
 
@@ -147,7 +148,6 @@ Each port is mapped to a specific difficulty level. This enables miners to choos
 
 **Example usage:**
 password: x d=2048
-
 
 ### Example Port Configuration
 
@@ -322,7 +322,7 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
 1. **Server Starts**: The server starts and listens for miners.
 2. **Fetch Template**:  
    Block templates are fetched from the Kaspa network by the `go-app` service using a gRPC connection.  
-   These templates are then published to a Redis channel, which is subscribed to by the `katpool-app` service.  
+   These templates are then published to a Redis channel, which is subscribed to by the `katpool-app` service.
 3. **Create Job**: The server creates a job from the template.
 4. **Distribute Job**: The job is sent to miners.
 5. **Miners Work**: Miners start finding a valid nonce.

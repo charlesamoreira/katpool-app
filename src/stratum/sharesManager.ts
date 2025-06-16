@@ -3,7 +3,7 @@ import { calculateTarget } from '../../wasm/kaspa';
 import { type Miner, type Worker } from './server';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';
-import { DEBUG, statsInterval } from '../../index';
+import { DEBUG } from '../../index';
 import {
   minerAddedShares,
   minerInvalidShares,
@@ -19,6 +19,8 @@ import { Encoding } from './templates/jobs/encoding';
 import { AsicType } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
+
+export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
 
 export interface WorkerStats {
   blocksFound: number;
@@ -273,10 +275,9 @@ export class SharesManager {
     // Update recentShares with the new share
     workerStats.recentShares.push({ timestamp: Date.now(), difficulty: currentDifficulty });
 
-    const windowSize = 10 * 60 * 1000; // 10 minutes window
     while (
       workerStats.recentShares.length > 0 &&
-      Date.now() - workerStats.recentShares.peekFront()!.timestamp > windowSize
+      Date.now() - workerStats.recentShares.peekFront()!.timestamp > WINDOW_SIZE
     ) {
       workerStats.recentShares.shift();
     }
@@ -284,21 +285,30 @@ export class SharesManager {
 
   startStatsThread() {
     const STALE_SOCKET_TIMEOUT = 90 * 1000;
-    const CLEANUP_INTERVAL = 30 * 1000;
+    const GENERAL_INTERVAL = 30 * 1000;
 
-    // Cleanup stale sockets
     setInterval(() => {
       const now = Date.now();
       const staleSockets: Socket<Miner>[] = [];
 
       this.miners.forEach((minerData, address) => {
         minerData.sockets.forEach(socket => {
-          let lastSeen = socket.data.connectedAt ?? 0;
+          let lastSeen = socket.data.connectedAt;
 
           // Find the most recent activity from any worker on this socket
           socket.data.workers.forEach(worker => {
             const stats = minerData.workerStats.get(worker.name);
             if (stats && stats.lastShare) {
+              const age = now - lastSeen;
+              if (age <= WINDOW_SIZE && age > 0) {
+                const workerRate = getAverageHashrateGHs(stats, age);
+                this.monitoring.debug(
+                  `SharesManager ${this.port}: Added estimated hashrate for ${worker.name} ${address} as ${stringifyHashrate(workerRate)} – connected ${Math.round(age / 1000)}s ago.`
+                );
+                // Update hashrate metrics
+                stats.hashrate = workerRate;
+                metrics.updateGaugeValue(workerHashRateGauge, [worker.name, address], workerRate);
+              }
               lastSeen = Math.max(lastSeen, stats.lastShare);
             }
           });
@@ -317,7 +327,7 @@ export class SharesManager {
       staleSockets.forEach(socket => {
         socket.end();
       });
-    }, CLEANUP_INTERVAL);
+    }, GENERAL_INTERVAL);
 
     // Stats reporting (simplified - no inline cleanup)
     const start = Date.now();
@@ -369,7 +379,7 @@ export class SharesManager {
       str += '\n===============================================================================\n';
 
       this.monitoring.log(str);
-    }, statsInterval);
+    }, WINDOW_SIZE);
   }
 
   // Helper method for stats calculation
@@ -815,7 +825,7 @@ export class SharesManager {
   }
 
   checkWorkerStatus(stats: WorkerStats) {
-    return Date.now() - stats.lastShare <= statsInterval ? Math.floor(stats.lastShare / 1000) : 0;
+    return Date.now() - stats.lastShare <= WINDOW_SIZE ? Math.floor(stats.lastShare / 1000) : 0;
   }
 
   logData(minerData: MinerData) {

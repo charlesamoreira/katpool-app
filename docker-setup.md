@@ -34,7 +34,7 @@ Before proceeding, ensure you have the following installed:
      sudo apt install git
      ```
 
-5. **GitHub Personal Access Token**:
+4. **GitHub Personal Access Token**:
    - Create a Personal Access Token following [GitHub's Guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
    - Update your username at Docker Login step in `./github/workflows/docker-image.yml`.
    - Add the token as a secret in your GitHub repository following [this guide](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
@@ -122,7 +122,6 @@ Replace `<service-name>` with the name of the service from the `docker-compose.y
 - This command is particularly useful when you need to:
 
   - Restart a single container (e.g., katpool-app, katpool-monitor) after code or config changes.
-  
   - Avoid restarting dependent services such as Redis, Postgres, or Prometheus.
 
   - Minimize downtime and resource usage during development or maintenance.
