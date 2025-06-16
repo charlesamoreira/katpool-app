@@ -17,7 +17,7 @@ export type Miner = {
   encoding: Encoding;
   asicType: AsicType;
   cachedBytes: string;
-  connectedAt?: number;
+  connectedAt: number;
 };
 
 type MessageCallback = (socket: Socket<Miner>, request: Request) => Promise<Response>;

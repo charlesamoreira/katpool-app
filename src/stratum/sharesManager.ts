@@ -286,21 +286,30 @@ export class SharesManager {
   startStatsThread() {
     const STALE_SOCKET_TIMEOUT = 90 * 1000;
     const GENERAL_INTERVAL = 30 * 1000;
-    const ESTIMATED_HASRATE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
-    // Cleanup stale sockets
     setInterval(() => {
+      // Cleanup stale sockets
       const now = Date.now();
       const staleSockets: Socket<Miner>[] = [];
 
       this.miners.forEach((minerData, address) => {
         minerData.sockets.forEach(socket => {
-          let lastSeen = socket.data.connectedAt ?? 0;
+          let lastSeen = socket.data.connectedAt;
 
           // Find the most recent activity from any worker on this socket
           socket.data.workers.forEach(worker => {
             const stats = minerData.workerStats.get(worker.name);
             if (stats && stats.lastShare) {
+              const age = now - lastSeen;
+              if (age <= WINDOW_SIZE && age > 0) {
+                const workerRate = getAverageHashrateGHs(stats, age);
+                this.monitoring.debug(
+                  `SharesManager ${this.port}: Added estimated hashrate for ${worker.name} ${address} as ${stringifyHashrate(workerRate)} – connected ${Math.round(age / 1000)}s ago.`
+                );
+                // Update hashrate metrics
+                stats.hashrate = workerRate;
+                metrics.updateGaugeValue(workerHashRateGauge, [worker.name, address], workerRate);
+              }
               lastSeen = Math.max(lastSeen, stats.lastShare);
             }
           });
@@ -318,50 +327,6 @@ export class SharesManager {
       // Clean up stale sockets
       staleSockets.forEach(socket => {
         socket.end();
-      });
-    }, GENERAL_INTERVAL);
-
-    // Estimated hashrate for recent workers
-    setInterval(() => {
-      const now = Date.now();
-
-      this.miners.forEach((minerData, address) => {
-        minerData.workerStats.forEach((stats, workerName) => {
-          let connectedAt: number | undefined;
-
-          // Correctly iterate over Map<string, Worker>
-          for (const socket of minerData.sockets) {
-            for (const [workerKey, worker] of socket.data.workers) {
-              if (workerKey === workerName) {
-                connectedAt = socket.data.connectedAt ?? now;
-                break;
-              }
-            }
-            if (connectedAt !== undefined) break;
-          }
-
-          if (connectedAt === undefined) {
-            this.monitoring.debug(
-              `SharesManager ${this.port}: No socket found for ${workerName} (${address})`
-            );
-            return;
-          }
-
-          const age = now - connectedAt;
-
-          if (age <= WINDOW_SIZE) {
-            this.monitoring.debug(
-              `SharesManager ${this.port}: Added estimated hashrate for ${workerName} (${address}) for 2-min hashrate – connected ${Math.round(age / 1000)}s ago.`
-            );
-          } else {
-            return;
-          }
-
-          const workerRate = getAverageHashrateGHs(stats, ESTIMATED_HASRATE_INTERVAL);
-          // Update hashrate metrics
-          stats.hashrate = workerRate;
-          metrics.updateGaugeValue(workerHashRateGauge, [workerName, address], workerRate);
-        });
       });
     }, GENERAL_INTERVAL);
 
