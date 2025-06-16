@@ -288,7 +288,6 @@ export class SharesManager {
     const GENERAL_INTERVAL = 30 * 1000;
 
     setInterval(() => {
-      // Cleanup stale sockets
       const now = Date.now();
       const staleSockets: Socket<Miner>[] = [];
 
