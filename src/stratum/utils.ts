@@ -1,4 +1,4 @@
-import type { WorkerStats } from './sharesManager'; // Import WorkerStats
+import { WINDOW_SIZE, type WorkerStats } from './sharesManager'; // Import WorkerStats
 
 const bigGig = Math.pow(10, 9);
 const maxTarget = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
@@ -20,8 +20,7 @@ export function stringifyHashrate(ghs: number): string {
   return `${hr.toFixed(2)}${unit}H/s`;
 }
 
-export function getAverageHashrateGHs(stats: WorkerStats): number {
-  const windowSize = 10 * 60 * 1000; // 10 minutes window
+export function getAverageHashrateGHs(stats: WorkerStats, windowSize = WINDOW_SIZE): number {
   const relevantShares: { timestamp: number; difficulty: number }[] = [];
 
   // Use Denque's toArray() method to filter relevant shares

@@ -20,6 +20,8 @@ import { AsicType } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 
+export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
+
 export interface WorkerStats {
   blocksFound: number;
   sharesFound: number;
@@ -273,10 +275,9 @@ export class SharesManager {
     // Update recentShares with the new share
     workerStats.recentShares.push({ timestamp: Date.now(), difficulty: currentDifficulty });
 
-    const windowSize = 10 * 60 * 1000; // 10 minutes window
     while (
       workerStats.recentShares.length > 0 &&
-      Date.now() - workerStats.recentShares.peekFront()!.timestamp > windowSize
+      Date.now() - workerStats.recentShares.peekFront()!.timestamp > WINDOW_SIZE
     ) {
       workerStats.recentShares.shift();
     }
@@ -284,7 +285,8 @@ export class SharesManager {
 
   startStatsThread() {
     const STALE_SOCKET_TIMEOUT = 90 * 1000;
-    const CLEANUP_INTERVAL = 30 * 1000;
+    const GENERAL_INTERVAL = 30 * 1000;
+    const ESTIMATED_HASRATE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
     // Cleanup stale sockets
     setInterval(() => {
@@ -317,7 +319,50 @@ export class SharesManager {
       staleSockets.forEach(socket => {
         socket.end();
       });
-    }, CLEANUP_INTERVAL);
+    }, GENERAL_INTERVAL);
+
+    // Estimated hashrate for stable workers
+    setInterval(() => {
+      const now = Date.now();
+
+      this.miners.forEach((minerData, address) => {
+        minerData.workerStats.forEach((stats, workerName) => {
+          let connectedAt: number | undefined;
+
+          // Correctly iterate over Map<string, Worker>
+          for (const socket of minerData.sockets) {
+            for (const [workerKey, worker] of socket.data.workers) {
+              if (workerKey === workerName) {
+                connectedAt = socket.data.connectedAt ?? now;
+                break;
+              }
+            }
+            if (connectedAt !== undefined) break;
+          }
+
+          if (connectedAt === undefined) {
+            this.monitoring.debug(
+              `SharesManager ${this.port}: No socket found for ${workerName} (${address})`
+            );
+            return;
+          }
+
+          const age = now - connectedAt;
+
+          if (age >= WINDOW_SIZE) {
+            this.monitoring.debug(
+              `SharesManager ${this.port}: Skipping ${workerName} (${address}) for 2-min hashrate – connected ${Math.round(age / 1000)}s ago`
+            );
+            return;
+          }
+
+          const workerRate = getAverageHashrateGHs(stats, ESTIMATED_HASRATE_INTERVAL);
+          // Update hashrate metrics
+          stats.hashrate = workerRate;
+          metrics.updateGaugeValue(workerHashRateGauge, [workerName, address], workerRate);
+        });
+      });
+    }, GENERAL_INTERVAL);
 
     // Stats reporting (simplified - no inline cleanup)
     const start = Date.now();

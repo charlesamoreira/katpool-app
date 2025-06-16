@@ -17,6 +17,10 @@ import fs from 'fs';
 import path from 'path';
 import { stringifyHashrate } from './src/stratum/utils';
 
+const poolStartTime = Date.now();
+const monitoring = new Monitoring();
+monitoring.log(`Main: Pool started at ${new Date(poolStartTime).toISOString()}`);
+
 async function shutdown() {
   monitoring.log('\n\nMain: Gracefully shutting down the pool...');
   try {
@@ -76,7 +80,6 @@ async function sendConfig() {
   }
 }
 
-const monitoring = new Monitoring();
 monitoring.log(`Main: Starting katpool App`);
 
 dotenv.config();
@@ -165,8 +168,6 @@ export const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
 function calculatePoolHashrate() {
-  let totalRate = 0;
-
   const addressHashrates: Map<string, number> = new Map();
   let poolHashRate = 0;
 
@@ -204,3 +205,20 @@ setInterval(calculatePoolHashrate, statsInterval);
 
 // Now you have an array of `pools` for each stratum configuration
 monitoring.log(`Main: ✅ Created ${stratums.length} stratums.`);
+
+const allowedRunMinutes = new Set([2, 4, 6, 8]); // only these times allowed
+
+const interval = setInterval(() => {
+  const now = Date.now();
+  const minutesSinceStart = Math.floor((now - poolStartTime) / (60 * 1000));
+
+  if (allowedRunMinutes.has(minutesSinceStart)) {
+    calculatePoolHashrate();
+    allowedRunMinutes.delete(minutesSinceStart); // ensure it runs only once per target minute
+  }
+
+  // Stop interval after 8 mins passed
+  if (minutesSinceStart > 8 || allowedRunMinutes.size === 0) {
+    clearInterval(interval);
+  }
+}, 60 * 1000); // check every minute
