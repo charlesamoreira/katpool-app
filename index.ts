@@ -16,6 +16,7 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { stringifyHashrate } from './src/stratum/utils';
+import { WINDOW_SIZE } from './src/stratum/sharesManager';
 
 const poolStartTime = Date.now();
 const monitoring = new Monitoring();
@@ -54,7 +55,6 @@ if (process.env.DEBUG == '1') {
   DEBUG = 1;
 }
 
-export const statsInterval = 600000; // 10 minutes
 const RPC_RETRY_INTERVAL = 5 * 100; // 500 MILI SECONDS
 const RPC_TIMEOUT = 24 * 60 * 60 * 1000; // 24 HOURS
 
@@ -201,7 +201,7 @@ function calculatePoolHashrate() {
 }
 
 // Set interval for subsequent updates
-setInterval(calculatePoolHashrate, statsInterval);
+setInterval(calculatePoolHashrate, WINDOW_SIZE);
 
 // Now you have an array of `pools` for each stratum configuration
 monitoring.log(`Main: ✅ Created ${stratums.length} stratums.`);

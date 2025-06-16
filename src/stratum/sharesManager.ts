@@ -3,7 +3,7 @@ import { calculateTarget } from '../../wasm/kaspa';
 import { type Miner, type Worker } from './server';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';
-import { DEBUG, statsInterval } from '../../index';
+import { DEBUG } from '../../index';
 import {
   minerAddedShares,
   minerInvalidShares,
@@ -414,7 +414,7 @@ export class SharesManager {
       str += '\n===============================================================================\n';
 
       this.monitoring.log(str);
-    }, statsInterval);
+    }, WINDOW_SIZE);
   }
 
   // Helper method for stats calculation
@@ -860,7 +860,7 @@ export class SharesManager {
   }
 
   checkWorkerStatus(stats: WorkerStats) {
-    return Date.now() - stats.lastShare <= statsInterval ? Math.floor(stats.lastShare / 1000) : 0;
+    return Date.now() - stats.lastShare <= WINDOW_SIZE ? Math.floor(stats.lastShare / 1000) : 0;
   }
 
   logData(minerData: MinerData) {
