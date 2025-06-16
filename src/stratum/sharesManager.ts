@@ -321,7 +321,7 @@ export class SharesManager {
       });
     }, GENERAL_INTERVAL);
 
-    // Estimated hashrate for stable workers
+    // Estimated hashrate for recent workers
     setInterval(() => {
       const now = Date.now();
 
@@ -349,10 +349,11 @@ export class SharesManager {
 
           const age = now - connectedAt;
 
-          if (age >= WINDOW_SIZE) {
+          if (age <= WINDOW_SIZE) {
             this.monitoring.debug(
-              `SharesManager ${this.port}: Skipping ${workerName} (${address}) for 2-min hashrate – connected ${Math.round(age / 1000)}s ago`
+              `SharesManager ${this.port}: Added estimated hashrate for ${workerName} (${address}) for 2-min hashrate – connected ${Math.round(age / 1000)}s ago.`
             );
+          } else {
             return;
           }
 
