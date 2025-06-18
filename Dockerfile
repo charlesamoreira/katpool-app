@@ -1,4 +1,3 @@
-
 # Step 1: Use the latest Ubuntu 24.04 LTS image as the base for building the wasm module
 FROM ubuntu:24.04 AS builder
 
