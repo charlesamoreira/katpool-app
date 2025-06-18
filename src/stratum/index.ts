@@ -499,6 +499,14 @@ export default class Stratum extends EventEmitter {
                   response.error = new StratumError('low-difficulty-share').toDump();
                   break;
                 default:
+                  logger.error('Unknown share processing error', {
+                    port: this.port,
+                    address,
+                    workerName: name,
+                    jobId: request.params[1],
+                    nonce: request.params[2],
+                    error: err.toString(),
+                  });
                   throw err;
               }
               response.result = false;
