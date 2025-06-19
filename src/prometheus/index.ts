@@ -103,21 +103,15 @@ export function startMetricsServer() {
 
     monitoring.log(`Prometheus: [Heartbeat] Bun server states: ${JSON.stringify(statuses)}`);
 
-    if (!hasDead) {
-      res.status(200).json({
-        status: 'ok',
-        startTime: poolStartTime,
-        activePorts,
-        allPorts: statuses,
-      });
-    } else {
-      res.status(503).json({
-        status: 'unhealthy',
-        startTime: poolStartTime,
-        activePorts,
-        allPorts: statuses,
-      });
-    }
+    const status = hasDead ? 'unhealthy' : 'ok';
+    const statusCode = hasDead ? 503 : 200;
+
+    res.status(statusCode).json({
+      status,
+      startTime: poolStartTime,
+      activePorts,
+      allPorts: statuses,
+    });
   });
 
   app.listen(9999, () => {
