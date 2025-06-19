@@ -18,7 +18,7 @@ import path from 'path';
 import { stringifyHashrate } from './src/stratum/utils';
 import { WINDOW_SIZE } from './src/stratum/sharesManager';
 
-const poolStartTime = Date.now();
+export const poolStartTime = Date.now();
 const monitoring = new Monitoring();
 monitoring.log(`Main: Pool started at ${new Date(poolStartTime).toISOString()}`);
 
