@@ -374,22 +374,13 @@ This TypeScript code defines a Stratum class that handles the stratum protocol f
 - **`templates`**: Templates manager. Listens to job templates over Redis channel and the processes them.
 - **`initialDifficulty`**: Initial mining difficulty.
 
-  **`varDiff`**: boolean,
-  **`extraNonce`**: number,
-  **`stratumMinDiff`**: number,
-  **`stratumMaxDiff`**: number
+- **`poolAddress`**: The wallet address to receive mined block rewards.
 
-- **`poolAddress`**:  
-  The wallet address to receive mined block rewards.
+- **`sharesPerMin`**: Target number of shares expected per miner per minute, used for variable difficulty adjustments.
 
-- **`sharesPerMin`**:  
-  Target number of shares expected per miner per minute, used for variable difficulty adjustments.
+- **`clampPow2`**: Whether to clamp difficulty adjustments to the nearest power of 2.
 
-- **`clampPow2`**:  
-  Whether to clamp difficulty adjustments to the nearest power of 2.
-
-- **`varDiff`**:  
-  Enables or disables variable difficulty. When enabled, the difficulty adjusts based on miner performance.
+- **`varDiff`**: Enables or disables variable difficulty. When enabled, the difficulty adjusts based on miner performance.
 
 - **`extraNonce`**:
 
@@ -397,12 +388,9 @@ This TypeScript code defines a Stratum class that handles the stratum protocol f
   - More bytes allow for more clients with unique nonce-spaces.
   - 1 byte = 256 clients, 2 bytes = 65536, 3 bytes = 16777216.
 
-- **`stratumMinDiff`**:  
-  The minimum difficulty assigned on the Stratum port.
+- **`stratumMinDiff`**: The minimum difficulty assigned on the Stratum port.
 
-- **`stratumMaxDiff`**
-
-Sets up the server, templates, and registers template announcements.
+- **`stratumMaxDiff`**: Sets up the server, templates, and registers template announcements.
 
 ##### Methods
 
