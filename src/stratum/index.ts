@@ -123,6 +123,11 @@ export default class Stratum extends EventEmitter {
           `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
         );
         this.subscriptors.delete(socket);
+        try {
+          this.sharesManager.deleteSocket(socket);
+        } catch (err) {
+          this.monitoring.error(`Stratum ${this.port}: Error deleting socket: ${err}`);
+        }
       } else {
         socket.data.workers.forEach((worker, _) => {
           if (this.varDiff) {
@@ -358,7 +363,11 @@ export default class Stratum extends EventEmitter {
           const workerStats = minerData.workerStats.get(worker.name)!;
           socket.data.difficulty = workerStats.minDiff;
           this.reflectDifficulty(socket, worker.name);
-          varDiff.labels(worker.name).set(workerStats.minDiff);
+          metrics.updateGaugeValue(
+            varDiff,
+            [worker.name, this.port.toString()],
+            workerStats.minDiff
+          );
 
           if (DEBUG)
             this.monitoring.debug(
@@ -379,7 +388,7 @@ export default class Stratum extends EventEmitter {
 
           metrics.updateGaugeValue(
             activeMinerGuage,
-            [name, address, socket.data.asicType],
+            [name, address, socket.data.asicType, socket.data.port.toString()],
             Math.floor(Date.now() / 1000)
           );
           break;
