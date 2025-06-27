@@ -78,7 +78,7 @@ docker-compose up
 
 - Add the `-d` flag to run in detached mode:
   ```bash
-  docker-compose up -d
+  docker compose up -d
   ```
 - Monitor logs if needed:
   ```bash
@@ -104,7 +104,7 @@ Once all services are running, you can access the application in your browser or
 To stop all running services:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Restart Specific Services
@@ -167,7 +167,7 @@ Log out and log back in to apply the changes.
 For detailed error messages, check the container logs:
 
 ```bash
-docker-compose logs <service-name>
+docker logs <service-name>
 ```
 
 ---
