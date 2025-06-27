@@ -76,7 +76,7 @@ The recommended installation is via docker compose. There are many instances tha
 
 ### Create env variables
 
-All application instances currently use the same environment variables defined in the `.env` file. A sample template is provided in `.env.sample` for reference.
+Currently, all backend services and instances rely on this shared `.env` file. A sample template is provided in `.env.sample` for reference.
 
 In the future, it is recommended to isolate certain environment variables based on the application’s role. Specifically, the private key should be assigned only to the `payment` app. The `katpool-app` instance does not require access to this key and should not be granted it for security and clarity of responsibility.
 
@@ -95,7 +95,7 @@ This separation will improve security, reduce unnecessary exposure, and better a
 
 - In `prometheus.yml` **update the targets**.
 
-- Check `config/config.json` and do the required configurations to your pool.
+- Review the `config/config.json` file and update it as needed for your pool setup. Currently, **all backend services** and instances rely on this **shared configuration file**.
 
   - **Assumption**: The **initial pool[0th pool]** is a **variable difficulty (var diff) pool** with a default port set to **8888**. Additionally, it includes support for **user-defined difficulty** settings.
 
