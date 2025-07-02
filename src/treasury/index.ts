@@ -8,7 +8,6 @@ const startTime = BigInt(Date.now());
 
 UtxoProcessor.setCoinbaseTransactionMaturityDAA('mainnet', 1000n);
 UtxoProcessor.setCoinbaseTransactionMaturityDAA('testnet-10', 1000n);
-UtxoProcessor.setCoinbaseTransactionMaturityDAA('testnet-11', 1000n);
 
 const db = new Database(process.env.DATABASE_URL || '');
 
