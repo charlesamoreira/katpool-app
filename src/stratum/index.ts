@@ -479,7 +479,6 @@ export default class Stratum extends EventEmitter {
                 currentDifficulty,
                 nonce,
                 this.templates,
-                socket.data.encoding,
                 request.params[1]
               );
             } catch (err: any) {

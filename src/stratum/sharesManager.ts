@@ -14,7 +14,6 @@ import {
 } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
-import { Encoding } from './templates/jobs/encoding';
 import { AsicType } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
@@ -181,7 +180,6 @@ export class SharesManager {
     difficulty: number,
     nonce: bigint,
     templates: Templates,
-    encoding: Encoding,
     id: string
   ) {
     let minerData = this.miners.get(address);
