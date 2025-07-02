@@ -87,7 +87,6 @@ export default class Templates {
           `Templates ${this.port}: the block with daaScore: ${template.header.daaScore} and nonce: ${nonce} by miner ${minerId} has been accepted with hash : ${newHash}`
         );
     } else {
-      // Failed
       if (DEBUG)
         this.monitoring.debug(
           `Templates ${this.port}: the block by ${minerId} has been rejected, reason: ${report.report.reason}`
@@ -227,9 +226,10 @@ export default class Templates {
         const id = this.jobs.deriveId(headerHash);
         Jobs.setJobIdDaaScoreMapping(id, template.header.daaScore);
 
-        //if (DEBUG) this.monitoring.debug(`Templates ${this.port}: templates.size: ${this.templates.size}, cacheSize: ${this.cacheSize}`)
-
         if (this.templates.size > this.cacheSize) {
+          this.monitoring.debug(
+            `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
+          );
           this.templates.delete(this.templates.entries().next().value![0]);
           this.jobs.expireNext();
         }

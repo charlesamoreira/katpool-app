@@ -1,4 +1,4 @@
-import { WINDOW_SIZE, type WorkerStats } from './sharesManager'; // Import WorkerStats
+import { WINDOW_SIZE, type WorkerStats } from './sharesManager';
 
 const bigGig = Math.pow(10, 9);
 const maxTarget = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');

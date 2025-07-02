@@ -13,7 +13,6 @@ import {
   activeMinerGuage,
 } from '../prometheus';
 import { metrics } from '../../index';
-// Fix the import statement
 import Denque from 'denque';
 import { Encoding } from './templates/jobs/encoding';
 import { AsicType } from '.';

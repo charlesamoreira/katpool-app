@@ -85,7 +85,7 @@ export default class Stratum extends EventEmitter {
 
     // Start the VarDiff thread
     this.clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
-    this.varDiff = varDiff || false; // Enable variable difficulty
+    this.varDiff = varDiff || false;
     if (this.varDiff) {
       this.sharesManager
         .startVardiffThread(sharesPerMin, this.clampPow2)
@@ -195,7 +195,7 @@ export default class Stratum extends EventEmitter {
     const validPattern = /^(d=|diff=)?\d+$/i;
 
     if (!validPattern.test(input)) {
-      return null; // Invalid pattern, return null
+      return null;
     }
 
     const match = input.match(/(\d+)/);

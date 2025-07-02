@@ -12,7 +12,6 @@ const monitoring = new Monitoring();
 collectDefaultMetrics();
 export { register };
 
-// Existing Gauges
 export const minerHashRateGauge = new client.Gauge({
   name: 'miner_hash_rate_GHps',
   help: 'Hash rate of each miner',

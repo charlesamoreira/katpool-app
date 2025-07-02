@@ -5,7 +5,6 @@ import Monitoring from '../monitoring';
 import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa';
 import { DEBUG } from '../../index';
 import { type Contribution } from '../stratum/sharesManager';
-import { PushMetrics } from '../prometheus'; // Import the PushMetrics class
 import axios, { AxiosError } from 'axios';
 import config from '../../config/config.json';
 import axiosRetry from 'axios-retry';
@@ -48,16 +47,14 @@ export default class Pool {
     this.treasury = treasury;
     this.stratum = stratum;
 
-    const databaseUrl = process.env.DATABASE_URL; // Add this line
+    const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      // Add this line
-      throw new Error('Environment variable DATABASE_URL is not set.'); // Add this line
+      throw new Error('Environment variable DATABASE_URL is not set.');
     }
 
-    this.database = new Database(databaseUrl); // Change this line
+    this.database = new Database(databaseUrl);
     this.monitoring = monitoring;
 
-    // this.stratum.on('subscription', (ip: string, agent: string) => this.monitoring.log(`Pool: Miner ${ip} subscribed into notifications with ${agent}.`));
     this.treasury.on(
       'coinbase',
       (
@@ -83,9 +80,6 @@ export default class Pool {
         );
       }
     );
-    //this.treasury.on('revenue', (amount: bigint) => this.revenuize(amount));
-
-    // this.monitoring.log(`Pool: Pool is active on port ${this.stratum.server.socket.port}.`);
   }
 
   private async revenuize(amount: bigint, block_hash: string, reward_block_hash: string) {
