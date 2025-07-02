@@ -54,7 +54,7 @@ services:
 
   kaspad:
     container_name: kaspad
-    image: supertypo/rusty-kaspad:v1.0.0
+    image: supertypo/rusty-kaspad:v1.0.1
     restart: unless-stopped
     ports:
       - '16111:16111/tcp'
@@ -73,7 +73,7 @@ services:
 
   # kaspad-test10: # REGULAR TESTNET
   #   container_name: kaspad-test10
-  #   image: supertypo/rusty-kaspad:v1.0.0
+  #   image: supertypo/rusty-kaspad:v1.0.1
   #   restart: unless-stopped
   #   ports:
   #     - "16211:16211/tcp"
