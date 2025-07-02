@@ -267,7 +267,7 @@ export default class Stratum extends EventEmitter {
           this.monitoring.log(
             `Stratum ${this.port}: Miner subscribed from ${socket.remoteAddress}`
           );
-          
+
           // Log miner subscription
           logger.info('Miner subscribed', {
             port: this.port,
@@ -407,7 +407,7 @@ export default class Stratum extends EventEmitter {
               this.monitoring.debug(
                 `Stratum ${this.port}: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
               );
-            
+
             // Log unauthorized share submission attempt
             logger.warn('Unauthorized share submission attempt', {
               port: this.port,
@@ -416,7 +416,7 @@ export default class Stratum extends EventEmitter {
               workerAddress: worker?.address,
               remoteAddress: socket.remoteAddress,
             });
-            
+
             throw Error(
               `Mismatching worker details request: worker.Addr: ${worker?.address}, ${request.params[0]}`
             );
@@ -428,7 +428,7 @@ export default class Stratum extends EventEmitter {
                 `Stratum ${this.port}: Job not found - Address: ${address}, Worker Name: ${name}`
               );
             metrics.updateGaugeInc(jobsNotFound, [name, address]);
-            
+
             // Log job not found
             logger.warn('Job not found for share submission', {
               port: this.port,
@@ -437,7 +437,7 @@ export default class Stratum extends EventEmitter {
               jobId: request.params[1],
               remoteAddress: socket.remoteAddress,
             });
-            
+
             response.result = false;
             response.error = new StratumError('job-not-found').toDump();
             return response;
@@ -492,7 +492,7 @@ export default class Stratum extends EventEmitter {
                 nonce: request.params[2],
                 error: err instanceof Error ? err.message : String(err),
               });
-              
+
               if (!(err instanceof Error)) throw err;
               switch (err.message) {
                 case 'Duplicate share':
