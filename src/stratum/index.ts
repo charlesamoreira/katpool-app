@@ -320,29 +320,15 @@ export default class Stratum extends EventEmitter {
           }
 
           const minerData = this.sharesManager.getMiners().get(worker.address)!;
+          let workerStats = this.sharesManager.getOrCreateWorkerStats(
+            worker.name,
+            minerData,
+            userDiff,
+            socket.data.asicType,
+            varDiffStatus
+          );
           // if (!minerData.workerStats.has(worker.name)) {
-          minerData.workerStats.set(worker.name, {
-            blocksFound: 0,
-            sharesFound: 0,
-            sharesDiff: 0,
-            staleShares: 0,
-            invalidShares: 0,
-            workerName: worker.name,
-            startTime: Date.now(),
-            lastShare: Date.now(),
-            varDiffStartTime: Date.now(),
-            varDiffSharesFound: 0,
-            varDiffWindow: 0,
-            minDiff: userDiff,
-            recentShares: new Denque<{
-              timestamp: number;
-              difficulty: number;
-              workerName: string;
-            }>(),
-            hashrate: 0,
-            asicType: socket.data.asicType,
-            varDiffEnabled: varDiffStatus,
-          });
+          minerData.workerStats.set(worker.name, workerStats);
           // }
 
           // Set extranonce
@@ -360,7 +346,7 @@ export default class Stratum extends EventEmitter {
           socket.write(JSON.stringify(event) + '\n');
 
           // Set initial difficulty for this worker
-          const workerStats = minerData.workerStats.get(worker.name)!;
+          workerStats = minerData.workerStats.get(worker.name)!;
           socket.data.difficulty = workerStats.minDiff;
           this.reflectDifficulty(socket, worker.name);
           metrics.updateGaugeValue(

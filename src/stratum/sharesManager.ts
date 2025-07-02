@@ -35,7 +35,7 @@ export interface WorkerStats {
   varDiffWindow: number;
   minDiff: number;
   recentShares: Denque<{ timestamp: number; difficulty: number }>;
-  hashrate: number; // Added hashrate property
+  hashrate: number;
   asicType: AsicType;
   varDiffEnabled: boolean;
 }
@@ -90,7 +90,13 @@ export class SharesManager {
     this.port = port;
   }
 
-  getOrCreateWorkerStats(workerName: string, minerData: MinerData): WorkerStats {
+  getOrCreateWorkerStats(
+    workerName: string,
+    minerData: MinerData,
+    minDiff: number = this.stratumMinDiff,
+    asicType: AsicType = AsicType.Unknown,
+    varDiffStatus?: boolean
+  ): WorkerStats {
     // Clean up any existing stale stats for this worker
     const existingStats = minerData.workerStats.get(workerName);
     if (existingStats) {
@@ -112,7 +118,7 @@ export class SharesManager {
     }
 
     // Create new worker stats
-    let varDiffStatus = false;
+    varDiffStatus = varDiffStatus ?? false;
     if (this.port === 8888) {
       varDiffStatus = true;
       this.monitoring.debug(
@@ -132,10 +138,10 @@ export class SharesManager {
       varDiffStartTime: Date.now(),
       varDiffSharesFound: 0,
       varDiffWindow: 0,
-      minDiff: this.stratumInitDiff,
+      minDiff,
       recentShares: new Denque<{ timestamp: number; difficulty: number }>(),
       hashrate: 0,
-      asicType: AsicType.Unknown,
+      asicType,
       varDiffEnabled: varDiffStatus,
     };
 
@@ -354,7 +360,12 @@ export class SharesManager {
             if (stats && stats.lastShare) {
               const age = now - lastSeen;
               if (age <= WINDOW_SIZE && age > 0) {
-                const workerRate = getAverageHashrateGHs(stats, age);
+                let workerRate = getAverageHashrateGHs(stats, age);
+                const SMOOTHING_FACTOR = 0.3; // Adjust between 0.1 (more smooth) to 0.5 (more responsive)
+                if (stats.hashrate != 0) {
+                  workerRate =
+                    SMOOTHING_FACTOR * workerRate + (1 - SMOOTHING_FACTOR) * stats.hashrate;
+                }
                 this.monitoring.debug(
                   `SharesManager ${this.port}: Added estimated hashrate for ${worker.name} ${address} as ${stringifyHashrate(workerRate)} – connected ${Math.round(age / 1000)}s ago.`
                 );
@@ -387,7 +398,8 @@ export class SharesManager {
       });
 
       if (staleSockets.length > 0) {
-        calculatePoolHashrate();
+        // Don't update pool hashrate value here - it flucuates more
+        calculatePoolHashrate(false);
       }
     }, GENERAL_INTERVAL);
 
