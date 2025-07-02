@@ -1,6 +1,13 @@
 import axios from 'axios';
 
 const { DATADOG_SECRET, DATADOG_LOG_URL } = process.env;
+if (!DATADOG_SECRET) {
+  throw new Error('Environment variable DATADOG_SECRET is not set.');
+}
+
+if (!DATADOG_LOG_URL) {
+  throw new Error('Environment variable DATADOG_LOG_URL is not set.');
+}
 
 interface LogContext {
   [key: string]: any;
