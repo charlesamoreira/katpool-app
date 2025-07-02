@@ -289,7 +289,7 @@ export class SharesManager {
         this.monitoring.debug(
           `SharesManager ${this.port}: Work found for ${minerId} and target: ${target}`
         );
-      
+
       // Log block discovery - this is a critical event
       logger.info('Block found!', {
         minerId,
@@ -302,7 +302,7 @@ export class SharesManager {
         jobId: id,
         daaScore: daaScore.toString(),
       });
-      
+
       const report = await templates.submit(minerId, address, hash, nonce);
       if (report === 'success') {
         workerStats.blocksFound++;
@@ -869,7 +869,7 @@ export class SharesManager {
       this.monitoring.debug(
         `SharesManager ${this.port}: varDiffRejectionRateThreshold - worker name: ${stats.workerName}, diff: ${stats.minDiff}, newDiff: ${newMinDiff}`
       );
-      
+
       // Log difficulty adjustment due to high rejection rate
       logger.warn('Difficulty adjusted due to high rejection rate', {
         workerName: stats.workerName,
@@ -879,7 +879,7 @@ export class SharesManager {
         hashrate: stats.hashrate,
         invalidShares: stats.invalidShares,
         totalShares: stats.sharesFound,
-        rejectionRate: (stats.invalidShares / stats.sharesFound * 100).toFixed(2) + '%',
+        rejectionRate: ((stats.invalidShares / stats.sharesFound) * 100).toFixed(2) + '%',
       });
     }
 

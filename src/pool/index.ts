@@ -34,8 +34,6 @@ let KASPA_BASE_URL = 'https://api.kaspa.org';
 
 if (config.network === 'testnet-10') {
   KASPA_BASE_URL = 'https://api-tn10.kaspa.org';
-} else if (config.network === 'testnet-11') {
-  KASPA_BASE_URL = 'https://api-tn11.kaspa.org';
 }
 
 export default class Pool {

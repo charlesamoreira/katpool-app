@@ -22,12 +22,16 @@ export const poolStartTime = Date.now();
 const monitoring = new Monitoring();
 monitoring.log(`Main: Pool started at ${new Date(poolStartTime).toISOString()}`);
 
+let treasury: Treasury;
+
 async function shutdown() {
   monitoring.log('\n\nMain: Gracefully shutting down the pool...');
   try {
     await rpc.unsubscribeBlockAdded();
     await rpc.unsubscribeNewBlockTemplate();
-    await treasury.unregisterProcessor();
+    if (treasury) {
+      await treasury.unregisterProcessor();
+    }
   } catch (error) {
     monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
   }
@@ -134,7 +138,7 @@ sendConfig();
 
 startMetricsServer();
 
-const treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
+treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
 // Array to hold multiple pools
 export const stratums: Stratum[] = [];
 

@@ -35,10 +35,10 @@ export default class Templates {
       this.subscriber.connect();
       this.subscriber.on('ready', () => {
         this.monitoring.log(`Templates ${this.port}: Connection to redis established`);
-        // TODO: remove this later, or extend monitoring logger for dd 
+        // TODO: remove this later, or extend monitoring logger for dd
         logger.info(`Templates ${this.port}: Connection to redis established`);
       });
-      this.subscriber.on('error', (err) => {
+      this.subscriber.on('error', err => {
         this.monitoring.error(`Templates ${this.port}: Redis client error: ${err}`);
       });
     } catch (err) {
@@ -112,12 +112,14 @@ export default class Templates {
     const templateChannel = config.redis_channel;
     let templateReceivedTimeout: ReturnType<typeof setTimeout> | null = null;
     const timeoutMs = 10000; // 10 seconds
-  
+
     const resetTemplateTimeout = () => {
       if (templateReceivedTimeout) clearTimeout(templateReceivedTimeout);
       templateReceivedTimeout = setTimeout(() => {
         // TODO: change log to fallback logic
-        this.monitoring.error(`Templates ${this.port}: No block template received after ${timeoutMs / 1000} seconds`);
+        this.monitoring.error(
+          `Templates ${this.port}: No block template received after ${timeoutMs / 1000} seconds`
+        );
       }, timeoutMs);
     };
 
