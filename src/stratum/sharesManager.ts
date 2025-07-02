@@ -913,12 +913,4 @@ export class SharesManager {
   checkWorkerStatus(stats: WorkerStats) {
     return Date.now() - stats.lastShare <= WINDOW_SIZE ? Math.floor(stats.lastShare / 1000) : 0;
   }
-
-  logData(minerData: MinerData) {
-    minerData.workerStats.forEach((stats, workerName) => {
-      this.monitoring.log(
-        `SharesManager ${this.port}: stats: ${JSON.stringify(stats)}, name: ${workerName}`
-      );
-    });
-  }
 }
