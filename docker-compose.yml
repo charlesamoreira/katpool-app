@@ -117,6 +117,8 @@ services:
       - katpool-db
       - redis
       - katpool-monitor
+      - kaspad
+      # - kaspad-test10
     ports:
       - '1111:1111'
       - '2222:2222'
@@ -166,6 +168,8 @@ services:
     container_name: katpool-payment
     depends_on:
       - katpool-db
+      - kaspad
+      # - kaspad-test10
     volumes:
       - ./config:/app/config
       - /root/docker_deployment/data/:/app/data/
