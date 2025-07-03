@@ -65,12 +65,15 @@ export default class Templates {
     template.header.hash = newHash;
 
     let report: ISubmitBlockResponse;
+    const traceId = Math.random().toString(36).substring(2, 15);
     try {
+      await logger.warn('before rpc.submitBlock', { traceId });
       report = await this.rpc.submitBlock({
         block: template,
         allowNonDAABlocks: false,
       });
     } catch (error) {
+      await logger.error('after rpc.submitBlock', { traceId, error, stack: (error instanceof Error && error.stack) ? error.stack : undefined });
       this.monitoring.error(`Templates ${this.port}: Block submit error: ${error}`);
       return;
     }
