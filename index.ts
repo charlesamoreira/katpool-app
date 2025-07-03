@@ -90,8 +90,16 @@ dotenv.config();
 
 monitoring.log(`Main: network: ${config.network}`);
 
+let rpcUrl = 'kaspad:17110';
+if (config.network === 'testnet-10') {
+  rpcUrl = 'kaspad-test10:17210';
+}
+
+monitoring.log(`Main: rpc url: ${rpcUrl}`);
+
 const rpc = new RpcClient({
-  resolver: new Resolver(),
+  url: rpcUrl, // This is WRPC (borsh) end point
+  // resolver: new Resolver(),
   encoding: Encoding.Borsh,
   networkId: config.network,
 });

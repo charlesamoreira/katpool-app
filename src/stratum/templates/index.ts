@@ -1,4 +1,4 @@
-import type { IBlock, RpcClient, IRawHeader } from '../../../wasm/kaspa';
+import type { IBlock, RpcClient, IRawHeader, ISubmitBlockResponse } from '../../../wasm/kaspa';
 import { Header, PoW } from '../../../wasm/kaspa';
 import Jobs from './jobs';
 import Monitoring from '../../monitoring';
@@ -64,10 +64,19 @@ export default class Templates {
     template.header.nonce = nonce;
     template.header.hash = newHash;
 
-    const report = await this.rpc.submitBlock({
-      block: template,
-      allowNonDAABlocks: false,
-    });
+    let report: ISubmitBlockResponse;
+    const traceId = Math.random().toString(36).substring(2, 15);
+    try {
+      await logger.warn('before rpc.submitBlock', { traceId });
+      report = await this.rpc.submitBlock({
+        block: template,
+        allowNonDAABlocks: false,
+      });
+    } catch (error) {
+      await logger.error('after rpc.submitBlock', { traceId, error, stack: (error instanceof Error && error.stack) ? error.stack : undefined });
+      this.monitoring.error(`Templates ${this.port}: Block submit error: ${error}`);
+      return;
+    }
 
     if (report.report.type === 'success') {
       const database = new Database(process.env.DATABASE_URL || '');
