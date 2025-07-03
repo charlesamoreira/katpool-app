@@ -171,7 +171,7 @@ for (const stratumConfig of config.stratum) {
 export const pool = new Pool(treasury, stratums);
 
 // Function to calculate and update pool hash rate
-export function calculatePoolHashrate() {
+export function calculatePoolHashrate(updatePool = true) {
   const addressHashrates: Map<string, number> = new Map();
   let poolHashRate = 0;
 
@@ -195,13 +195,16 @@ export function calculatePoolHashrate() {
     poolHashRate += rate;
   });
 
-  const rateStr = stringifyHashrate(poolHashRate);
-  metrics.updateGaugeValue(
-    poolHashRateGauge,
-    ['pool', stratums[0].sharesManager.poolAddress],
-    poolHashRate
-  );
-  monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
+  // Update pool hashrate only for estimate values and on regular interval
+  if (updatePool) {
+    const rateStr = stringifyHashrate(poolHashRate);
+    metrics.updateGaugeValue(
+      poolHashRateGauge,
+      ['pool', stratums[0].sharesManager.poolAddress],
+      poolHashRate
+    );
+    monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
+  }
 }
 
 // Set interval for subsequent updates
