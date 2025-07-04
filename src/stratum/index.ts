@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import Server, { type Miner, type Worker } from './server';
 import { type Request, type Response, type Event, StratumError } from './server/protocol';
 import type Templates from './templates/index.ts';
-import { Address, type IRawHeader } from '../../wasm/kaspa-dev';
+import { Address, type IRawHeader } from '../../wasm/kaspa';
 import { Encoding, encodeJob } from './templates/jobs/encoding.ts';
 import { SharesManager } from './sharesManager';
 import { jobsNotFound, activeMinerGuage, varDiff } from '../prometheus';

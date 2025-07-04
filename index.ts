@@ -1,4 +1,4 @@
-import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa-dev';
+import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa';
 import Treasury from './src/treasury';
 import Templates from './src/stratum/templates';
 import Stratum from './src/stratum';
@@ -221,27 +221,23 @@ setInterval(calculatePoolHashrate, WINDOW_SIZE);
 // Now you have an array of `pools` for each stratum configuration
 monitoring.log(`Main: ✅ Created ${stratums.length} stratums.`);
 
-/*
- * Estimating Miner and Pool hashrate
- */
+const allowedRunMinutes = new Set([2, 4, 6, 8]); // only these times allowed
 
-// const allowedRunMinutes = new Set([2, 4, 6, 8]); // only these times allowed
+const interval = setInterval(() => {
+  const now = Date.now();
+  const minutesSinceStart = Math.floor((now - poolStartTime) / (60 * 1000));
 
-// const interval = setInterval(() => {
-//   const now = Date.now();
-//   const minutesSinceStart = Math.floor((now - poolStartTime) / (60 * 1000));
+  if (allowedRunMinutes.has(minutesSinceStart)) {
+    monitoring.debug(
+      `Main: Estimating initial hashrates. After ${minutesSinceStart} minutes since pool start.`
+    );
+    calculatePoolHashrate();
+    allowedRunMinutes.delete(minutesSinceStart); // ensure it runs only once per target minute
+  }
 
-//   if (allowedRunMinutes.has(minutesSinceStart)) {
-//     monitoring.debug(
-//       `Main: Estimating initial hashrates. After ${minutesSinceStart} minutes since pool start.`
-//     );
-//     calculatePoolHashrate();
-//     allowedRunMinutes.delete(minutesSinceStart); // ensure it runs only once per target minute
-//   }
-
-//   // Stop interval after 8 mins passed
-//   if (minutesSinceStart > 8 || allowedRunMinutes.size === 0) {
-//     monitoring.debug(`Main: Stopping interval after ${minutesSinceStart} minutes.`);
-//     clearInterval(interval);
-//   }
-// }, 60 * 1000); // check every minute
+  // Stop interval after 8 mins passed
+  if (minutesSinceStart > 8 || allowedRunMinutes.size === 0) {
+    monitoring.debug(`Main: Stopping interval after ${minutesSinceStart} minutes.`);
+    clearInterval(interval);
+  }
+}, 60 * 1000); // check every minute

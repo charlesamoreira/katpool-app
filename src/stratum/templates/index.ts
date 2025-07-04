@@ -1,5 +1,5 @@
-import type { IBlock, RpcClient, IRawHeader, ISubmitBlockResponse } from '../../../wasm/kaspa-dev';
-import { Header, PoW } from '../../../wasm/kaspa-dev';
+import type { IBlock, RpcClient, IRawHeader, ISubmitBlockResponse } from '../../../wasm/kaspa';
+import { Header, PoW } from '../../../wasm/kaspa';
 import Jobs from './jobs';
 import Monitoring from '../../monitoring';
 import { DEBUG } from '../../../index';
@@ -73,11 +73,7 @@ export default class Templates {
         allowNonDAABlocks: false,
       });
     } catch (error) {
-      await logger.error('after rpc.submitBlock', {
-        traceId,
-        error,
-        stack: error instanceof Error && error.stack ? error.stack : undefined,
-      });
+      await logger.error('after rpc.submitBlock', { traceId, error, stack: (error instanceof Error && error.stack) ? error.stack : undefined });
       this.monitoring.error(`Templates ${this.port}: Block submit error: ${error}`);
       return;
     }
