@@ -1,5 +1,5 @@
 import blake2b, { type Blake2b } from 'blake2b';
-import type { IRawHeader } from '../../../../wasm/kaspa-dev/kaspa';
+import type { IRawHeader } from '../../../../wasm/kaspa/kaspa';
 
 export enum Encoding {
   BigHeader,
