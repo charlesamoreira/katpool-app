@@ -31,7 +31,7 @@ export default class Treasury extends EventEmitter {
     this.rpc = rpc;
     this.privateKey = new PrivateKey(privateKey);
     this.address = this.privateKey.toAddress(networkId).toString();
-    this.processor = new UtxoProcessor({ rpc, networkId });
+    this.processor = new UtxoProcessor({ rpc: this.rpc, networkId });
     this.context = new UtxoContext({ processor: this.processor });
     this.fee = fee;
     this.monitoring = new Monitoring();
