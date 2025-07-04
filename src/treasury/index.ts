@@ -239,6 +239,7 @@ export default class Treasury extends EventEmitter {
 
     if (DEBUG) this.monitoring.debug(`TrxManager: Removing event listeners`);
     this.processor.removeEventListener('utxo-proc-start', this.utxoProcStartHandler);
+    this.context.unregisterAddresses([this.address]);
     this.processor.removeEventListener('maturity', this.maturityHandler);
 
     await this.processor.stop();
