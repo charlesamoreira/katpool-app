@@ -51,7 +51,7 @@ process.on('uncaughtException', err => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  monitoring.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+  monitoring.error(`Unhandled Rejection: ${reason}`);
 });
 
 export let DEBUG = 0;
