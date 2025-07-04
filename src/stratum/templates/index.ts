@@ -73,7 +73,11 @@ export default class Templates {
         allowNonDAABlocks: false,
       });
     } catch (error) {
-      await logger.error('after rpc.submitBlock', { traceId, error, stack: (error instanceof Error && error.stack) ? error.stack : undefined });
+      await logger.error('after rpc.submitBlock', {
+        traceId,
+        error,
+        stack: error instanceof Error && error.stack ? error.stack : undefined,
+      });
       this.monitoring.error(`Templates ${this.port}: Block submit error: ${error}`);
       return;
     }
