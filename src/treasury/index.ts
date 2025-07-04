@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import Monitoring from '../monitoring';
-import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa';
+import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa-dev';
 import Database from '../pool/database';
 import { DEBUG, pool } from '../..';
 

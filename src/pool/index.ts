@@ -2,7 +2,7 @@ import type Treasury from '../treasury';
 import type Stratum from '../stratum';
 import Database from './database';
 import Monitoring from '../monitoring';
-import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa';
+import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa-dev';
 import { DEBUG } from '../../index';
 import { type Contribution } from '../stratum/sharesManager';
 import axios, { AxiosError } from 'axios';

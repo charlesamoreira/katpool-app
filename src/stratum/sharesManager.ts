@@ -1,5 +1,5 @@
 import type { Socket } from 'bun';
-import { calculateTarget } from '../../wasm/kaspa';
+import { calculateTarget } from '../../wasm/kaspa-dev';
 import { type Miner, type Worker } from './server';
 import { stringifyHashrate, getAverageHashrateGHs } from './utils';
 import Monitoring from '../monitoring';

@@ -1,4 +1,4 @@
-import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa';
+import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa-dev';
 import Treasury from './src/treasury';
 import Templates from './src/stratum/templates';
 import Stratum from './src/stratum';

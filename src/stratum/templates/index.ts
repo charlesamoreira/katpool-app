@@ -1,5 +1,5 @@
-import type { IBlock, RpcClient, IRawHeader, ISubmitBlockResponse } from '../../../wasm/kaspa';
-import { Header, PoW } from '../../../wasm/kaspa';
+import type { IBlock, RpcClient, IRawHeader, ISubmitBlockResponse } from '../../../wasm/kaspa-dev';
+import { Header, PoW } from '../../../wasm/kaspa-dev';
 import Jobs from './jobs';
 import Monitoring from '../../monitoring';
 import { DEBUG } from '../../../index';
