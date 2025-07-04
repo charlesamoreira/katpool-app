@@ -358,21 +358,24 @@ export class SharesManager {
           socket.data.workers.forEach(worker => {
             const stats = minerData.workerStats.get(worker.name);
             if (stats && stats.lastShare) {
-              const age = now - lastSeen;
-              if (age <= WINDOW_SIZE && age > 0) {
-                let workerRate = getAverageHashrateGHs(stats, age);
-                const SMOOTHING_FACTOR = 0.3; // Adjust between 0.1 (more smooth) to 0.5 (more responsive)
-                if (stats.hashrate != 0) {
-                  workerRate =
-                    SMOOTHING_FACTOR * workerRate + (1 - SMOOTHING_FACTOR) * stats.hashrate;
-                }
-                this.monitoring.debug(
-                  `SharesManager ${this.port}: Added estimated hashrate for ${worker.name} ${address} as ${stringifyHashrate(workerRate)} – connected ${Math.round(age / 1000)}s ago.`
-                );
-                // Update hashrate metrics
-                stats.hashrate = workerRate;
-                metrics.updateGaugeValue(workerHashRateGauge, [worker.name, address], workerRate);
-              }
+              /*
+               * Estimating Worker hashrate
+               */
+              // const age = now - lastSeen;
+              // if (age <= WINDOW_SIZE && age > 0) {
+              //   let workerRate = getAverageHashrateGHs(stats, age);
+              //   const SMOOTHING_FACTOR = 0.3; // Adjust between 0.1 (more smooth) to 0.5 (more responsive)
+              //   if (stats.hashrate != 0) {
+              //     workerRate =
+              //       SMOOTHING_FACTOR * workerRate + (1 - SMOOTHING_FACTOR) * stats.hashrate;
+              //   }
+              //   this.monitoring.debug(
+              //     `SharesManager ${this.port}: Added estimated hashrate for ${worker.name} ${address} as ${stringifyHashrate(workerRate)} – connected ${Math.round(age / 1000)}s ago.`
+              //   );
+              //   // Update hashrate metrics
+              //   stats.hashrate = workerRate;
+              //   metrics.updateGaugeValue(workerHashRateGauge, [worker.name, address], workerRate);
+              // }
               lastSeen = Math.max(lastSeen, stats.lastShare);
             }
           });
@@ -397,10 +400,13 @@ export class SharesManager {
         this.deleteSocket(socket);
       });
 
-      if (staleSockets.length > 0) {
-        // Don't update pool hashrate value here - it flucuates more
-        calculatePoolHashrate(false);
-      }
+      /*
+       *Invoking method to update miner and pool hashrate
+       */
+      // if (staleSockets.length > 0) {
+      //   // Don't update pool hashrate value here - it flucuates more
+      //   calculatePoolHashrate(false);
+      // }
     }, GENERAL_INTERVAL);
 
     // Stats reporting (simplified - no inline cleanup)
