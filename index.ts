@@ -221,23 +221,27 @@ setInterval(calculatePoolHashrate, WINDOW_SIZE);
 // Now you have an array of `pools` for each stratum configuration
 monitoring.log(`Main: ✅ Created ${stratums.length} stratums.`);
 
-const allowedRunMinutes = new Set([2, 4, 6, 8]); // only these times allowed
+/*
+ * Estimating Miner and Pool hashrate
+ */
 
-const interval = setInterval(() => {
-  const now = Date.now();
-  const minutesSinceStart = Math.floor((now - poolStartTime) / (60 * 1000));
+// const allowedRunMinutes = new Set([2, 4, 6, 8]); // only these times allowed
 
-  if (allowedRunMinutes.has(minutesSinceStart)) {
-    monitoring.debug(
-      `Main: Estimating initial hashrates. After ${minutesSinceStart} minutes since pool start.`
-    );
-    calculatePoolHashrate();
-    allowedRunMinutes.delete(minutesSinceStart); // ensure it runs only once per target minute
-  }
+// const interval = setInterval(() => {
+//   const now = Date.now();
+//   const minutesSinceStart = Math.floor((now - poolStartTime) / (60 * 1000));
 
-  // Stop interval after 8 mins passed
-  if (minutesSinceStart > 8 || allowedRunMinutes.size === 0) {
-    monitoring.debug(`Main: Stopping interval after ${minutesSinceStart} minutes.`);
-    clearInterval(interval);
-  }
-}, 60 * 1000); // check every minute
+//   if (allowedRunMinutes.has(minutesSinceStart)) {
+//     monitoring.debug(
+//       `Main: Estimating initial hashrates. After ${minutesSinceStart} minutes since pool start.`
+//     );
+//     calculatePoolHashrate();
+//     allowedRunMinutes.delete(minutesSinceStart); // ensure it runs only once per target minute
+//   }
+
+//   // Stop interval after 8 mins passed
+//   if (minutesSinceStart > 8 || allowedRunMinutes.size === 0) {
+//     monitoring.debug(`Main: Stopping interval after ${minutesSinceStart} minutes.`);
+//     clearInterval(interval);
+//   }
+// }, 60 * 1000); // check every minute
