@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import Monitoring from '../monitoring';
-import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa';
+import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa-dev';
 import Database from '../pool/database';
 import { DEBUG, pool } from '../..';
 
@@ -31,7 +31,7 @@ export default class Treasury extends EventEmitter {
     this.rpc = rpc;
     this.privateKey = new PrivateKey(privateKey);
     this.address = this.privateKey.toAddress(networkId).toString();
-    this.processor = new UtxoProcessor({ rpc, networkId });
+    this.processor = new UtxoProcessor({ rpc: this.rpc, networkId });
     this.context = new UtxoContext({ processor: this.processor });
     this.fee = fee;
     this.monitoring = new Monitoring();
@@ -239,6 +239,7 @@ export default class Treasury extends EventEmitter {
 
     if (DEBUG) this.monitoring.debug(`TrxManager: Removing event listeners`);
     this.processor.removeEventListener('utxo-proc-start', this.utxoProcStartHandler);
+    this.context.unregisterAddresses([this.address]);
     this.processor.removeEventListener('maturity', this.maturityHandler);
 
     await this.processor.stop();
