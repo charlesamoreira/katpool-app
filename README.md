@@ -109,7 +109,7 @@ This separation will improve security, reduce unnecessary exposure, and better a
 
   * **payoutAlertCronSchedule**: cron schedule expression for Telegram alerting. If not set or invalid, it will be defaulted to four times a day (0 1,7,13,19 \* \* \*).
 
-  * **thresholdAmountInKAS**: Miner rewards will be paid above this minimum amount
+  * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
 
   * **block_wait_time_milliseconds**: time to wait since last new block message from kaspad before manually requesting a new block.
 
