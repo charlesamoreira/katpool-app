@@ -96,13 +96,10 @@ This separation will improve security, reduce unnecessary exposure, and better a
 - In `prometheus.yml` **update the targets**.
 
 - Review the `config/config.json` file and update it as needed for your pool setup. Currently, **all backend services** and instances rely on this **shared configuration file**.
-
   - **Assumption**: The **initial pool[0th pool]** is a **variable difficulty (var diff) pool** with a default port set to **8888**. Additionally, it includes support for **user-defined difficulty** settings.
-
     - To enable user-defined difficulty, user needs to set difficulty as `d=2048` in password field.
 
   - Please refer to [Crontab.guru](https://crontab.guru/) to set these two cron expressions.
-
   * **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (\* _/12 _ \* \*).
 
   * **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (\* _/12 _ \* \*).
@@ -112,7 +109,6 @@ This separation will improve security, reduce unnecessary exposure, and better a
   * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
 
   * **block_wait_time_milliseconds**: time to wait since last new block message from kaspad before manually requesting a new block.
-
     - **Note**: It is to be set in **seconds**.
 
   * **extraNonceSize** The value should be between 0 to 3.
@@ -277,24 +273,20 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
 ### The Mining Cycle: Step-by-Step
 
 1. **Starting the Server**:
-
    - The Stratum server starts and begins listening for connections from miners.
    - The server connects to the Kaspa network via the RPC client. It fetches block templates from Redis channel.
 
 2. **Fetching Block Templates**:
-
    - We have used [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using _gRPC_ connection and sends them over Redis channel.
    - Katpool-app fetches block templates from Redis channel.
    - It creates a PoW object from the template to help miners validate their work.
    - The block template and PoW object are stored in the `templates` map.
 
 3. **Distributing Jobs to Miners**:
-
    - A job is created from the block template, encoding the necessary data.
    - The job is sent to all connected miners, instructing them on what work to perform.
 
 4. **Miners Start Working**:
-
    - Each miner starts working on the job by trying to find a valid nonce.
    - A valid nonce, when combined with the block template and hashed, must meet the difficulty target.
 
@@ -304,7 +296,6 @@ Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foun
      - It retrieves the PoW object from the `templates` map.
      - It validates the nonce against the difficulty target.
 6. **Accepting or Rejecting Shares**:
-
    - **Valid Share**: If the nonce is valid and meets the target, the server:
      - Adds the share to the `works` map for tracking.
      - If the share completes a valid block, it submits the block to the Kaspa network.
@@ -383,7 +374,6 @@ This TypeScript code defines a Stratum class that handles the stratum protocol f
 - **`varDiff`**: Enables or disables variable difficulty. When enabled, the difficulty adjusts based on miner performance.
 
 - **`extraNonce`**:
-
   - Size in bytes of extranonce, from 0 (no extranonce) to 3.
   - More bytes allow for more clients with unique nonce-spaces.
   - 1 byte = 256 clients, 2 bytes = 65536, 3 bytes = 16777216.
@@ -395,22 +385,18 @@ This TypeScript code defines a Stratum class that handles the stratum protocol f
 ##### Methods
 
 - **`dumpContributions()`**:
-
   - Clears and returns the current contributions.
 
 - **`addShare(address: string, hash: string, difficulty: number, nonce: bigint)`**:
-
   - Checks for duplicate shares.
   - Validates the work against the target difficulty.
   - Submits the valid block to the templates.
   - Adds the contribution to the map.
 
 - **`announceTemplate(id: string, hash: string, timestamp: bigint)`**:
-
   - Encodes the job and sends it to all subscribed miners.
 
 - **`reflectDifficulty(socket: Socket<Miner>)`**:
-
   - Sends the current mining difficulty to a miner.
 
 - **`onMessage(socket: Socket<Miner>, request: Request)`**:
@@ -420,11 +406,9 @@ This TypeScript code defines a Stratum class that handles the stratum protocol f
 #### `onMessage` Method
 
 - **`mining.subscribe`**:
-
   - Adds the socket to the subscribers set and emits a subscription event.
 
 - **`mining.authorize`**:
-
   - Validates the address and manages worker registration.
   - Sets the extra nonce and sends difficulty information.
 
@@ -474,7 +458,6 @@ This TypeScript code defines a Templates class responsible for managing mining j
 ### Key Components
 
 1. **Imports**:
-
    - `IBlock`, `RpcClient`, `Header`, `PoW`: Types and classes from the Kaspa WebAssembly module.
    - `Jobs`: A class handling job-related operations.
 

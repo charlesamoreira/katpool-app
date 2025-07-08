@@ -1,7 +1,7 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from '../../wasm/kaspa';
 import { type Miner, type Worker } from './server';
-import { stringifyHashrate, getAverageHashrateGHs } from './utils';
+import { stringifyHashrate, getAverageHashrateGHs, debugHashrateCalculation } from './utils';
 import Monitoring from '../monitoring';
 import { calculatePoolHashrate, DEBUG } from '../../index';
 import {
@@ -433,6 +433,7 @@ export class SharesManager {
           );
           if (status) {
             workerRate = getAverageHashrateGHs(stats);
+            debugHashrateCalculation(stats);
           } else {
             workerRate = 0;
           }
