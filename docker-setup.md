@@ -9,7 +9,6 @@ This guide will help you set up and run the project in a Docker environment usin
 Before proceeding, ensure you have the following installed:
 
 1. **Docker**:
-
    - Install Docker by following the official [Docker Installation Guide](https://docs.docker.com/get-docker/).
    - Verify the installation:
      ```bash
@@ -17,7 +16,6 @@ Before proceeding, ensure you have the following installed:
      ```
 
 2. **Docker Compose**:
-
    - Docker Compose is included with Docker Desktop for Windows and macOS. For Linux, install it separately:
      ```bash
      sudo apt install docker-compose
@@ -28,7 +26,6 @@ Before proceeding, ensure you have the following installed:
      ```
 
 3. **Git**:
-
    - To clone the project repository, install Git:
      ```bash
      sudo apt install git
@@ -120,7 +117,6 @@ Replace `<service-name>` with the name of the service from the `docker-compose.y
 #### Use Case
 
 - This command is particularly useful when you need to:
-
   - Restart a single container (e.g., katpool-app, katpool-monitor) after code or config changes.
   - Avoid restarting dependent services such as Redis, Postgres, or Prometheus.
 
