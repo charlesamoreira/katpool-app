@@ -122,6 +122,10 @@ export default class Stratum extends EventEmitter {
         this.monitoring.debug(
           `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
         );
+        logger.info('deleteSocket, Socket readyState is closed', {
+          remoteAddress: socket?.remoteAddress || 'unknown',
+          workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+        });
         this.subscriptors.delete(socket);
         try {
           this.sharesManager.deleteSocket(socket);

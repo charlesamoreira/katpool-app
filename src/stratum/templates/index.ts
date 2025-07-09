@@ -67,7 +67,7 @@ export default class Templates {
     let report: ISubmitBlockResponse;
     const traceId = Math.random().toString(36).substring(2, 15);
     try {
-      await logger.warn('before rpc.submitBlock', { traceId });
+      await logger.info('before rpc.submitBlock', { traceId });
       report = await this.rpc.submitBlock({
         block: template,
         allowNonDAABlocks: false,
@@ -240,9 +240,9 @@ export default class Templates {
         Jobs.setJobIdDaaScoreMapping(id, template.header.daaScore);
 
         if (this.templates.size > this.cacheSize) {
-          this.monitoring.debug(
-            `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
-          );
+          // this.monitoring.debug(
+          //   `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
+          // );
           this.templates.delete(this.templates.entries().next().value![0]);
           this.jobs.expireNext();
         }
