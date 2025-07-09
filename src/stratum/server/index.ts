@@ -65,7 +65,7 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
               );
-              logger.info('Socket on close, worker-disconnected', {
+              logger.info('deleteSocket, Socket on close - worker-disconnected', {
                 workerName: worker.name,
                 remoteAddress: socket.remoteAddress,
               });
@@ -126,7 +126,7 @@ export default class Server {
               );
               socket.write(JSON.stringify(response));
               this.sharesManager.sleep(1 * 1000);
-              logger.info('Socket error, ending socket', {
+              logger.warn('deleteSocket, Socket error', {
                 remoteAddress: socket?.remoteAddress || 'unknown',
                 workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
                 error: error.message,
@@ -138,7 +138,7 @@ export default class Server {
         this.monitoring.error(
           `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
-        logger.info('Socket parseMessage failed, ending socket', {
+        logger.warn('deleteSocket, Socket parseMessage failed', {
           remoteAddress: socket?.remoteAddress || 'unknown',
           workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
         });
@@ -152,7 +152,7 @@ export default class Server {
       this.monitoring.error(
         `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
-      logger.info('Socket cachedBytes.length > 512', {
+      logger.warn('deleteSocket, Socket cachedBytes.length > 512', {
         remoteAddress: socket?.remoteAddress || 'unknown',
         workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
       });
