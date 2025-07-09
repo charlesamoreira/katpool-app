@@ -510,6 +510,10 @@ export class SharesManager {
           this.monitoring.debug(
             `SharesManager ${this.port}: Deleted socket for: ${workerName}@${address}`
           );
+          logger.warn('deleteSocket', {
+            address,
+            workerName,
+          });
 
           // Check if any other socket still uses this worker
           const stillConnected = Array.from(minerData.sockets).some(skt =>
@@ -521,9 +525,9 @@ export class SharesManager {
             const workerStats = minerData.workerStats.get(workerName);
             // minerData.workerStats.delete(workerName);
 
-            this.monitoring.debug(
-              `SharesManager ${this.port}: Deleted worker stats for: ${workerName}@${address}`
-            );
+            // this.monitoring.debug(
+            //   `SharesManager ${this.port}: Deleted worker stats for: ${workerName}@${address}`
+            // );
 
             // Update metrics
             metrics.updateGaugeValue(workerHashRateGauge, [workerName, address], 0);
@@ -552,6 +556,9 @@ export class SharesManager {
             this.monitoring.debug(
               `SharesManager ${this.port}: Deleted empty miner data for address: ${address}`
             );
+            logger.warn('SharesManager: Deleted empty miner data', {
+              address,
+            });
           }
         }
       }
