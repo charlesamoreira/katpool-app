@@ -67,7 +67,7 @@ export default class Templates {
     let report: ISubmitBlockResponse;
     const traceId = Math.random().toString(36).substring(2, 15);
     try {
-      await logger.warn('before rpc.submitBlock', { traceId });
+      await logger.info('before rpc.submitBlock', { traceId });
       report = await this.rpc.submitBlock({
         block: template,
         allowNonDAABlocks: false,
