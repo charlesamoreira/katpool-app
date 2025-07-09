@@ -543,7 +543,7 @@ export class SharesManager {
                 0
               );
             } else {
-              logger.warn('SharesManager: No worker stats found for cleanup', {
+              logger.warn('No worker stats found for cleanup', {
                 remoteAddress: socket?.remoteAddress || 'unknown',
                 workerName,
               });
@@ -556,7 +556,7 @@ export class SharesManager {
             this.monitoring.debug(
               `SharesManager ${this.port}: Deleted empty miner data for address: ${address}`
             );
-            logger.warn('SharesManager: Deleted empty miner data', {
+            logger.warn('Deleted empty miner data', {
               address,
             });
           }
