@@ -397,7 +397,7 @@ export class SharesManager {
           remoteAddress: socket.remoteAddress,
           lastSeen: Math.round((now - socket.data.connectedAt) / 1000) + 's ago',
         });
-        this.deleteSocket(socket);
+        // this.deleteSocket(socket);
       });
 
       /*
