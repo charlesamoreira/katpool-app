@@ -240,9 +240,9 @@ export default class Templates {
         Jobs.setJobIdDaaScoreMapping(id, template.header.daaScore);
 
         if (this.templates.size > this.cacheSize) {
-          this.monitoring.debug(
-            `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
-          );
+          // this.monitoring.debug(
+          //   `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
+          // );
           this.templates.delete(this.templates.entries().next().value![0]);
           this.jobs.expireNext();
         }
