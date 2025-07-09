@@ -100,21 +100,22 @@ export class SharesManager {
     // Clean up any existing stale stats for this worker
     const existingStats = minerData.workerStats.get(workerName);
     if (existingStats) {
-      // Check if this worker is actually connected via any socket
-      const isConnected = Array.from(minerData.sockets).some(socket =>
-        socket.data.workers.has(workerName)
-      );
+      return existingStats;
+      // // Check if this worker is actually connected via any socket
+      // const isConnected = Array.from(minerData.sockets).some(socket =>
+      //   socket.data.workers.has(workerName)
+      // );
 
-      if (!isConnected) {
-        // Clean up orphaned worker stats
-        minerData.workerStats.delete(workerName);
-        this.monitoring.debug(
-          `SharesManager ${this.port}: Cleaned up orphaned worker stats for ${workerName}`
-        );
-      } else {
-        // Worker is connected, return existing stats
-        return existingStats;
-      }
+      // if (!isConnected) {
+      //   // Clean up orphaned worker stats
+      //   minerData.workerStats.delete(workerName);
+      //   this.monitoring.debug(
+      //     `SharesManager ${this.port}: Cleaned up orphaned worker stats for ${workerName}`
+      //   );
+      // } else {
+      //   // Worker is connected, return existing stats
+      //   return existingStats;
+      // }
     }
 
     // Create new worker stats
