@@ -6,7 +6,6 @@ import { AsicType } from '..';
 import type { SharesManager } from '../sharesManager';
 import { markServerUp, updateMinerActivity } from '../../shared/heartbeat';
 import logger from '../../monitoring/datadog';
-import { SocketClosedUnexpectedlyError } from 'redis';
 
 export type Worker = {
   address: string;
