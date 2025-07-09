@@ -538,6 +538,11 @@ export class SharesManager {
                 [workerName, address, workerStats.asicType, socket.data.port.toString()],
                 0
               );
+            } else {
+              logger.warn('SharesManager: No worker stats found for cleanup', {
+                remoteAddress: socket?.remoteAddress || 'unknown',
+                workerName,
+              });
             }
           }
 

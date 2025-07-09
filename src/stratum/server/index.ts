@@ -5,6 +5,8 @@ import Monitoring from '../../monitoring';
 import { AsicType } from '..';
 import type { SharesManager } from '../sharesManager';
 import { markServerUp, updateMinerActivity } from '../../shared/heartbeat';
+import logger from '../../monitoring/datadog';
+import { SocketClosedUnexpectedlyError } from 'redis';
 
 export type Worker = {
   address: string;
@@ -64,6 +66,10 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
               );
+              logger.info('Socket on close, worker-disconnected', {
+                workerName: worker.name,
+                remoteAddress: socket.remoteAddress,
+              });
               this.sharesManager.deleteSocket(socket);
             }
           }
@@ -116,14 +122,27 @@ export default class Server {
               socket.write(JSON.stringify(response) + '\n');
             } else if (error instanceof Error) {
               response.error![1] = error.message;
-              this.monitoring.error(`server ${this.port}: Ending socket : ${error.message}`);
+              this.monitoring.error(
+                `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
+              );
               socket.write(JSON.stringify(response));
               this.sharesManager.sleep(1 * 1000);
+              logger.info('Socket error, ending socket', {
+                remoteAddress: socket?.remoteAddress || 'unknown',
+                workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+                error: error.message,
+              });
               this.sharesManager.deleteSocket(socket);
             } else throw error;
           });
       } else {
-        this.monitoring.error(`server ${this.port}: Ending socket`);
+        this.monitoring.error(
+          `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
+        );
+        logger.info('Socket parseMessage failed, ending socket', {
+          remoteAddress: socket?.remoteAddress || 'unknown',
+          workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+        });
         this.sharesManager.deleteSocket(socket);
       }
     }
@@ -132,8 +151,12 @@ export default class Server {
 
     if (socket.data.cachedBytes.length > 512) {
       this.monitoring.error(
-        `server ${this.port}: Ending socket as socket.data.cachedBytes.length > 512`
+        `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
+      logger.info('Socket cachedBytes.length > 512', {
+        remoteAddress: socket?.remoteAddress || 'unknown',
+        workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+      });
       this.sharesManager.deleteSocket(socket);
     }
   }
