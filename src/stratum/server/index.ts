@@ -13,6 +13,7 @@ export type Worker = {
 };
 
 export type Miner = {
+  closeReason?: string;
   difficulty: number;
   extraNonce: string;
   workers: Map<string, Worker>;
@@ -52,10 +53,19 @@ export default class Server {
         open: this.onConnect.bind(this),
         data: this.onData.bind(this),
         error: (socket, error) => {
-          this.monitoring.error(`server ${this.port}: Opennig socket ${error}`);
+          this.monitoring.debug(
+            `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
+          );
+          logger.error(
+            'Socket error',
+            this.getSocketLogData(socket, {
+              error: error.message,
+            })
+          );
         },
         close: socket => {
           const workers = Array.from(socket.data.workers.values());
+          const closeReason = socket.data.closeReason || 'Client disconnected';
           if (workers.length === 0) {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.`
@@ -65,18 +75,57 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
               );
-              logger.info('deleteSocket, Socket on close - worker-disconnected', {
-                workerName: worker.name,
-                remoteAddress: socket.remoteAddress,
-              });
+              logger.info(
+                'deleteSocket, Socket on close - worker-disconnected',
+                this.getSocketLogData(socket, {
+                  workerName: worker.name,
+                  reason: closeReason,
+                })
+              );
               this.sharesManager.deleteSocket(socket);
             }
           }
+        },
+        connectError: (socket, error) => {
+          this.monitoring.debug(
+            `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Connection error: ${error}`
+          );
+          logger.error(
+            'Connection error',
+            this.getSocketLogData(socket, {
+              error: error.message,
+            })
+          );
+        },
+        end: socket => {
+          socket.data.closeReason = 'Socket connection ended gracefully';
+          this.monitoring.debug(
+            `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
+          );
+          logger.info('Socket connection ended gracefully', this.getSocketLogData(socket));
+        },
+        timeout: socket => {
+          socket.data.closeReason = 'Connection timeout';
+          this.monitoring.debug(
+            `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
+          );
+          logger.warn('Socket connection timeout', this.getSocketLogData(socket));
         },
       },
     });
 
     markServerUp(this.port);
+  }
+
+  private getSocketLogData(socket: Socket<Miner>, additionalData?: Record<string, any>) {
+    return {
+      remoteAddress: socket?.remoteAddress || 'unknown',
+      workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+      connectedAt: socket.data.connectedAt,
+      duration: Date.now() - socket.data.connectedAt,
+      port: this.port,
+      ...additionalData,
+    };
   }
 
   private onConnect(socket: Socket<Miner>) {
@@ -121,27 +170,27 @@ export default class Server {
               socket.write(JSON.stringify(response) + '\n');
             } else if (error instanceof Error) {
               response.error![1] = error.message;
-              this.monitoring.error(
-                `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
+              this.monitoring.debug(
+                `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
               );
               socket.write(JSON.stringify(response));
               this.sharesManager.sleep(1 * 1000);
-              logger.warn('deleteSocket, Socket error', {
-                remoteAddress: socket?.remoteAddress || 'unknown',
-                workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-                error: error.message,
-              });
+              logger.warn(
+                'deleteSocket, Socket error',
+                this.getSocketLogData(socket, {
+                  error: error.message,
+                })
+              );
+              socket.data.closeReason = `Error: ${error.message}`;
               this.sharesManager.deleteSocket(socket);
             } else throw error;
           });
       } else {
-        this.monitoring.error(
-          `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
+        this.monitoring.debug(
+          `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
-        logger.warn('deleteSocket, Socket parseMessage failed', {
-          remoteAddress: socket?.remoteAddress || 'unknown',
-          workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-        });
+        logger.warn('deleteSocket, Socket parseMessage failed', this.getSocketLogData(socket));
+        socket.data.closeReason = 'ParseMessage failure';
         this.sharesManager.deleteSocket(socket);
       }
     }
@@ -149,13 +198,11 @@ export default class Server {
     socket.data.cachedBytes = messages[0];
 
     if (socket.data.cachedBytes.length > 512) {
-      this.monitoring.error(
-        `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
+      this.monitoring.debug(
+        `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
-      logger.warn('deleteSocket, Socket cachedBytes.length > 512', {
-        remoteAddress: socket?.remoteAddress || 'unknown',
-        workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-      });
+      logger.warn('deleteSocket, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
+      socket.data.closeReason = 'CachedBytes length exceeded';
       this.sharesManager.deleteSocket(socket);
     }
   }
