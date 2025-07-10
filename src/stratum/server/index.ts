@@ -22,6 +22,7 @@ export type Miner = {
   cachedBytes: string;
   connectedAt: number;
   port: number;
+  cleanupPerformed?: boolean;
 };
 
 type MessageCallback = (socket: Socket<Miner>, request: Request) => Promise<Response>;
@@ -62,6 +63,7 @@ export default class Server {
               error: error.message,
             })
           );
+          this.performCleanup(socket, `Socket error: ${error.message}`);
         },
         close: socket => {
           const workers = Array.from(socket.data.workers.values());
@@ -82,9 +84,9 @@ export default class Server {
                   reason: closeReason,
                 })
               );
-              this.sharesManager.deleteSocket(socket);
             }
           }
+          this.performCleanup(socket, closeReason);
         },
         connectError: (socket, error) => {
           this.monitoring.debug(
@@ -96,6 +98,7 @@ export default class Server {
               error: error.message,
             })
           );
+          this.performCleanup(socket, `Connection error: ${error.message}`);
         },
         end: socket => {
           socket.data.closeReason = 'Socket connection ended gracefully';
@@ -103,6 +106,7 @@ export default class Server {
             `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.info('Socket connection ended gracefully', this.getSocketLogData(socket));
+          this.performCleanup(socket, 'Socket connection ended gracefully');
         },
         timeout: socket => {
           socket.data.closeReason = 'Connection timeout';
@@ -110,6 +114,7 @@ export default class Server {
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.warn('Socket connection timeout', this.getSocketLogData(socket));
+          this.performCleanup(socket, 'Connection timeout');
         },
       },
     });
@@ -143,7 +148,30 @@ export default class Server {
     updateMinerActivity(this.port);
   }
 
+  performCleanup(socket: Socket<Miner>, reason: string): boolean {
+    // Atomic check-and-set to prevent race conditions
+    if (socket.data.cleanupPerformed) {
+      return false; // Already cleaned up
+    }
+
+    socket.data.cleanupPerformed = true;
+    socket.data.closeReason = reason;
+
+    try {
+      this.sharesManager.deleteSocket(socket);
+      return true; // Cleanup performed
+    } catch (err) {
+      this.monitoring.error(`Cleanup failed for ${socket.remoteAddress}: ${err}`);
+      return false;
+    }
+  }
+
   private onData(socket: Socket<Miner>, data: Buffer) {
+    // Skip processing if socket is already being cleaned up
+    if (socket.data.cleanupPerformed) {
+      return;
+    }
+
     updateMinerActivity(this.port); // Any connection
 
     socket.data.cachedBytes += data;
@@ -156,9 +184,15 @@ export default class Server {
       if (message) {
         this.onMessage(socket, message)
           .then(response => {
-            socket.write(JSON.stringify(response) + '\n');
+            if (!socket.data.cleanupPerformed) {
+              socket.write(JSON.stringify(response) + '\n');
+            }
           })
           .catch(error => {
+            if (socket.data.cleanupPerformed) {
+              return;
+            }
+
             let response: Response = {
               id: message.id,
               result: false,
@@ -181,8 +215,7 @@ export default class Server {
                   error: error.message,
                 })
               );
-              socket.data.closeReason = `Error: ${error.message}`;
-              this.sharesManager.deleteSocket(socket);
+              this.performCleanup(socket, `Error: ${error.message}`);
             } else throw error;
           });
       } else {
@@ -190,8 +223,8 @@ export default class Server {
           `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
         logger.warn('deleteSocket, Socket parseMessage failed', this.getSocketLogData(socket));
-        socket.data.closeReason = 'ParseMessage failure';
-        this.sharesManager.deleteSocket(socket);
+        this.performCleanup(socket, 'ParseMessage failure');
+        return;
       }
     }
 
@@ -202,8 +235,7 @@ export default class Server {
         `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
       logger.warn('deleteSocket, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
-      socket.data.closeReason = 'CachedBytes length exceeded';
-      this.sharesManager.deleteSocket(socket);
+      this.performCleanup(socket, 'CachedBytes length exceeded');
     }
   }
 }
