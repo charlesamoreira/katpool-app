@@ -128,8 +128,7 @@ export default class Stratum extends EventEmitter {
         });
         this.subscriptors.delete(socket);
         try {
-          socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
-          this.sharesManager.deleteSocket(socket);
+          this.server.performCleanup(socket, 'Stratum: socket.readyState === "closed"');
         } catch (err) {
           this.monitoring.error(`Stratum ${this.port}: Error deleting socket: ${err}`);
         }
