@@ -53,8 +53,8 @@ export default class Server {
         open: this.onConnect.bind(this),
         data: this.onData.bind(this),
         error: (socket, error) => {
-          this.monitoring.error(
-            `server ${this.port}: ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
+          this.monitoring.debug(
+            `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
           );
           logger.error(
             'Socket error',
@@ -87,8 +87,8 @@ export default class Server {
           }
         },
         connectError: (socket, error) => {
-          this.monitoring.error(
-            `server ${this.port}: ${socket?.remoteAddress || 'unknown'} Connection error: ${error}`
+          this.monitoring.debug(
+            `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Connection error: ${error}`
           );
           logger.error(
             'Connection error',
@@ -170,8 +170,8 @@ export default class Server {
               socket.write(JSON.stringify(response) + '\n');
             } else if (error instanceof Error) {
               response.error![1] = error.message;
-              this.monitoring.error(
-                `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
+              this.monitoring.debug(
+                `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
               );
               socket.write(JSON.stringify(response));
               this.sharesManager.sleep(1 * 1000);
@@ -186,8 +186,8 @@ export default class Server {
             } else throw error;
           });
       } else {
-        this.monitoring.error(
-          `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
+        this.monitoring.debug(
+          `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
         logger.warn('deleteSocket, Socket parseMessage failed', this.getSocketLogData(socket));
         socket.data.closeReason = 'ParseMessage failure';
@@ -198,8 +198,8 @@ export default class Server {
     socket.data.cachedBytes = messages[0];
 
     if (socket.data.cachedBytes.length > 512) {
-      this.monitoring.error(
-        `server ${this.port}: Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
+      this.monitoring.debug(
+        `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
       logger.warn('deleteSocket, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
       socket.data.closeReason = 'CachedBytes length exceeded';
