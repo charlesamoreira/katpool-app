@@ -393,15 +393,13 @@ export class SharesManager {
 
       // Clean up stale sockets
       staleSockets.forEach(socket => {
-        if (!socket.data.cleanupPerformed) {
-          logger.warn('Stale socket detected, cleaning up', {
-            port: this.port,
-            remoteAddress: socket.remoteAddress,
-            lastSeen: Math.round((now - socket.data.connectedAt) / 1000) + 's ago',
-          });
-          // socket.data.closeReason = 'Stale socket';
-          // this.deleteSocket(socket);
-        }
+        logger.warn('Stale socket detected, cleaning up', {
+          port: this.port,
+          remoteAddress: socket.remoteAddress,
+          lastSeen: Math.round((now - socket.data.connectedAt) / 1000) + 's ago',
+        });
+        // socket.data.closeReason = 'Stale socket';
+        // this.deleteSocket(socket);
       });
 
       /*
@@ -490,12 +488,6 @@ export class SharesManager {
   }
 
   deleteSocket(socket: Socket<Miner>) {
-    // Prevent multiple cleanup calls
-    if (socket.data.cleanupPerformed) {
-      return;
-    }
-    socket.data.cleanupPerformed = true;
-
     try {
       const workersToCleanup: Array<{ address: string; workerName: string }> = [];
 
