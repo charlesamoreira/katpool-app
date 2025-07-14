@@ -16,14 +16,16 @@ export default class Templates {
   private cacheSize: number;
   private monitoring: Monitoring;
   private subscriber: RedisClientType;
-  public port: number;
+  private callbacks: Set<
+    (id: string, hash: string, timestamp: bigint, header: IRawHeader) => void
+  > = new Set();
+  private isSubscribed: boolean = false;
 
-  constructor(rpc: RpcClient, address: string, cacheSize: number, port: number) {
+  constructor(rpc: RpcClient, address: string, cacheSize: number) {
     this.monitoring = new Monitoring();
     this.rpc = rpc;
     this.address = address;
     this.cacheSize = cacheSize;
-    this.port = port;
     this.subscriber = redis.createClient({
       url: 'redis://' + config.redis_address,
     });
@@ -34,15 +36,15 @@ export default class Templates {
     try {
       this.subscriber.connect();
       this.subscriber.on('ready', () => {
-        this.monitoring.log(`Templates ${this.port}: Connection to redis established`);
+        this.monitoring.log(`Templates: Connection to redis established`);
         // TODO: remove this later, or extend monitoring logger for dd
-        logger.info(`Templates ${this.port}: Connection to redis established`);
+        logger.info(`Templates: Connection to redis established`);
       });
       this.subscriber.on('error', err => {
-        this.monitoring.error(`Templates ${this.port}: Redis client error: ${err}`);
+        this.monitoring.error(`Templates: Redis client error: ${err}`);
       });
     } catch (err) {
-      this.monitoring.error(`Templates ${this.port}: Error connecting to redis : ${err}`);
+      this.monitoring.error(`Templates: Error connecting to redis : ${err}`);
     }
   }
 
@@ -78,7 +80,7 @@ export default class Templates {
         error,
         stack: error instanceof Error && error.stack ? error.stack : undefined,
       });
-      this.monitoring.error(`Templates ${this.port}: Block submit error: ${error}`);
+      this.monitoring.error(`Templates: Block submit error: ${error}`);
       return;
     }
 
@@ -97,12 +99,12 @@ export default class Templates {
 
       if (DEBUG)
         this.monitoring.debug(
-          `Templates ${this.port}: the block with daaScore: ${template.header.daaScore} and nonce: ${nonce} by miner ${minerId} has been accepted with hash : ${newHash}`
+          `Templates: the block with daaScore: ${template.header.daaScore} and nonce: ${nonce} by miner ${minerId} has been accepted with hash : ${newHash}`
         );
     } else {
       if (DEBUG)
         this.monitoring.debug(
-          `Templates ${this.port}: the block by ${minerId} has been rejected, reason: ${report.report.reason}`
+          `Templates: the block by ${minerId} has been rejected, reason: ${report.report.reason}`
         );
     }
 
@@ -113,7 +115,7 @@ export default class Templates {
   async register(
     callback: (id: string, hash: string, timestamp: bigint, header: IRawHeader) => void
   ) {
-    this.monitoring.log(`Templates ${this.port}: Registering new template callback`);
+    this.monitoring.log(`Templates: Registering new template callback`);
     // this.rpc.addEventListener('new-block-template', async () => {
     // const template = (await this.rpc.getBlockTemplate({
     //   payAddress: this.address,
@@ -121,6 +123,19 @@ export default class Templates {
     // })).block as IRawBlock;
 
     // if no block template is received within a timeout, trigger error log
+    this.monitoring.log(`Templates: Registering new template callback`);
+    this.callbacks.add(callback);
+    this.monitoring.log(`Templates: Total callbacks registered: ${this.callbacks.size}`);
+
+    // Only set up Redis subscription on first callback
+    if (!this.isSubscribed) {
+      this.monitoring.log(`Templates: Setting up Redis subscription`);
+      await this.setupRedisSubscription();
+      this.isSubscribed = true;
+    }
+  }
+
+  private async setupRedisSubscription() {
     const templateChannel = config.redis_channel;
     let templateReceivedTimeout: ReturnType<typeof setTimeout> | null = null;
     const timeoutMs = 10000; // 10 seconds
@@ -130,7 +145,7 @@ export default class Templates {
       templateReceivedTimeout = setTimeout(() => {
         // TODO: change log to fallback logic
         this.monitoring.error(
-          `Templates ${this.port}: No block template received after ${timeoutMs / 1000} seconds`
+          `Templates: No block template received after ${timeoutMs / 1000} seconds`
         );
       }, timeoutMs);
     };
@@ -241,15 +256,25 @@ export default class Templates {
 
         if (this.templates.size > this.cacheSize) {
           // this.monitoring.debug(
-          //   `Templates ${this.port}: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
+          //   `Templates: this.templates.size > this.cacheSize - ${this.templates.size} > ${this.cacheSize}`
           // );
           this.templates.delete(this.templates.entries().next().value![0]);
           this.jobs.expireNext();
         }
 
-        callback(id, proofOfWork.prePoWHash, header.timestamp, template.header);
+        // Notify all registered callbacks
+        this.monitoring.log(
+          `Templates: Notifying ${this.callbacks.size} callbacks about new template`
+        );
+        this.callbacks.forEach(callback => {
+          try {
+            callback(id, proofOfWork.prePoWHash, header.timestamp, template.header);
+          } catch (error) {
+            this.monitoring.error(`Templates: Error in callback: ${error}`);
+          }
+        });
       } catch (err) {
-        this.monitoring.error(`Templates ${this.port}: Error processing template: ${err}`);
+        this.monitoring.error(`Templates: Error processing template: ${err}`);
       }
     });
     // })

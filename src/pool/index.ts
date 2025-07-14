@@ -3,7 +3,7 @@ import type Stratum from '../stratum';
 import Database from './database';
 import Monitoring from '../monitoring';
 import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa';
-import { DEBUG } from '../../index';
+import { DEBUG, sendConfig } from '../../index';
 import { type Contribution } from '../stratum/sharesManager';
 import axios, { AxiosError } from 'axios';
 import config from '../../config/config.json';
@@ -80,6 +80,8 @@ export default class Pool {
         );
       }
     );
+
+    sendConfig();
   }
 
   private async revenuize(amount: bigint, block_hash: string, reward_block_hash: string) {

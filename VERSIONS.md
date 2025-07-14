@@ -1,3 +1,3 @@
-- Rusty-Kaspa node : `v1.0.1`
+- Rusty-Kaspa node : `v1.0.1` # Update this version for Rusty-Kaspa node upgrade (for reference).
 - Node: `20`
 - Rust: `1.82` (Used to build wasm inside docker)

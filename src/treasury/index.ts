@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import Monitoring from '../monitoring';
-import { PrivateKey, UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa';
+import { UtxoProcessor, UtxoContext, type RpcClient } from '../../wasm/kaspa';
 import Database from '../pool/database';
 import { DEBUG, pool } from '../..';
 
@@ -12,7 +12,6 @@ UtxoProcessor.setCoinbaseTransactionMaturityDAA('testnet-10', 1000n);
 const db = new Database(process.env.DATABASE_URL || '');
 
 export default class Treasury extends EventEmitter {
-  privateKey: PrivateKey;
   address: string;
   processor: UtxoProcessor;
   context: UtxoContext;
@@ -25,12 +24,11 @@ export default class Treasury extends EventEmitter {
   private watchdogStarted = false;
   reconnecting = false;
 
-  constructor(rpc: RpcClient, networkId: string, privateKey: string, fee: number) {
+  constructor(rpc: RpcClient, networkId: string, address: string, fee: number) {
     super();
 
     this.rpc = rpc;
-    this.privateKey = new PrivateKey(privateKey);
-    this.address = this.privateKey.toAddress(networkId).toString();
+    this.address = address;
     this.processor = new UtxoProcessor({ rpc: this.rpc, networkId });
     this.context = new UtxoContext({ processor: this.processor });
     this.fee = fee;
