@@ -151,7 +151,7 @@ const privateKey: PrivateKey = new PrivateKey(treasuryPrivateKey);
 const address: string = privateKey.toAddress(config.network).toString();
 
 // Create Templates instance
-const templates = new Templates(rpc, address, config.stratum[0].templates.cacheSize);
+const templates = new Templates(rpc, address, config.templates.cacheSize);
 
 for (const stratumConfig of config.stratum) {
   // Create Stratum instance
