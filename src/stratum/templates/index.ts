@@ -123,7 +123,6 @@ export default class Templates {
     // })).block as IRawBlock;
 
     // if no block template is received within a timeout, trigger error log
-    this.monitoring.log(`Templates: Registering new template callback`);
     this.callbacks.add(callback);
     this.monitoring.log(`Templates: Total callbacks registered: ${this.callbacks.size}`);
 
