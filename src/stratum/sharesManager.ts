@@ -61,7 +61,6 @@ export type Contribution = {
 export class SharesManager {
   private contributions: Map<bigint, Contribution> = new Map();
   private miners: Map<string, MinerData> = new Map();
-  public poolAddress: string;
   private monitoring: Monitoring;
   private shareWindow: Denque<Contribution>;
   private lastAllocationTime: number;
@@ -72,13 +71,11 @@ export class SharesManager {
   private port: number;
 
   constructor(
-    poolAddress: string,
     stratumInitDiff: number,
     stratumMinDiff: number,
     stratumMaxDiff: number,
     port: number
   ) {
-    this.poolAddress = poolAddress;
     this.stratumMinDiff = stratumMinDiff;
     this.stratumMaxDiff = stratumMaxDiff;
     this.monitoring = new Monitoring();

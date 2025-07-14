@@ -12,7 +12,6 @@ import Monitoring from '../monitoring/index.ts';
 import { DEBUG } from '../../index';
 import { Mutex } from 'async-mutex';
 import { metrics } from '../../index';
-import Denque from 'denque';
 import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
@@ -49,7 +48,7 @@ export default class Stratum extends EventEmitter {
   constructor(
     templates: Templates,
     initialDifficulty: number,
-    poolAddress: string,
+    port: number,
     sharesPerMin: number,
     clampPow2: boolean,
     varDiff: boolean,
@@ -59,16 +58,10 @@ export default class Stratum extends EventEmitter {
   ) {
     super();
     this.monitoring = new Monitoring();
-    this.port = templates.port;
-    this.sharesManager = new SharesManager(
-      poolAddress,
-      initialDifficulty,
-      stratumMinDiff,
-      stratumMaxDiff,
-      templates.port
-    );
+    this.port = port;
+    this.sharesManager = new SharesManager(initialDifficulty, stratumMinDiff, stratumMaxDiff, port);
     this.server = new Server(
-      templates.port,
+      port,
       initialDifficulty,
       this.onMessage.bind(this),
       this.sharesManager

@@ -4,16 +4,16 @@
   "pool_id": "us-katpool1",
   "location": "us-east",
   "hostname": "kas.katpool.xyz",
-  "block_wait_time_milliseconds": "1000",
+  "block_wait_time_milliseconds": "300",
   "redis_address": "redis:6379",
   "redis_channel": "NewBlockTemplateChannel",
   "miner_info": "Katpool",
+  "templates": {
+    "cacheSize": 300
+  },
   "stratum": [
     {
       "port": 8888,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 2048,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -24,9 +24,6 @@
     },
     {
       "port": 1111,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 256,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -37,9 +34,6 @@
     },
     {
       "port": 2222,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 1024,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -50,9 +44,6 @@
     },
     {
       "port": 3333,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 4096,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -63,9 +54,6 @@
     },
     {
       "port": 4444,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 8192,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -76,9 +64,6 @@
     },
     {
       "port": 5555,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 16384,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -89,9 +74,6 @@
     },
     {
       "port": 6666,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 32768,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,
@@ -102,9 +84,6 @@
     },
     {
       "port": 7777,
-      "templates": {
-        "cacheSize": 300
-      },
       "difficulty": 65536,
       "sharesPerMinute": 10,
       "extraNonceSize": 2,

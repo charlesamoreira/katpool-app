@@ -1,4 +1,4 @@
-import { RpcClient, Encoding, Resolver, ConnectStrategy } from './wasm/kaspa';
+import { RpcClient, Encoding, Resolver, ConnectStrategy, PrivateKey } from './wasm/kaspa';
 import Treasury from './src/treasury';
 import Templates from './src/stratum/templates';
 import Stratum from './src/stratum';
@@ -50,8 +50,8 @@ process.on('uncaughtException', err => {
   monitoring.error(`Main: Uncaught Exception: ${err}`);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  monitoring.error(`Unhandled Rejection: ${reason}`);
+process.on('unhandledRejection', err => {
+  monitoring.error(`Main: Unhandled Rejection: ${err}`);
 });
 
 export let DEBUG = 0;
@@ -63,7 +63,7 @@ const RPC_RETRY_INTERVAL = 5 * 100; // 500 MILI SECONDS
 const RPC_TIMEOUT = 24 * 60 * 60 * 1000; // 24 HOURS
 
 // Send config.json to API server
-async function sendConfig() {
+export async function sendConfig() {
   if (DEBUG) monitoring.debug(`Main: Trying to send config to katpool-monitor`);
   try {
     const configPath = path.resolve('./config/config.json');
@@ -142,28 +142,23 @@ if (!treasuryPrivateKey) {
 
 export const metrics = new PushMetrics();
 
-sendConfig();
-
 startMetricsServer();
 
-treasury = new Treasury(rpc, serverInfo.networkId, treasuryPrivateKey, config.treasury.fee);
-// Array to hold multiple pools
+// Array to hold multiple stratums
 export const stratums: Stratum[] = [];
 
-for (const stratumConfig of config.stratum) {
-  // Create Templates instance
-  const templates = new Templates(
-    rpc,
-    treasury.address,
-    stratumConfig.templates.cacheSize,
-    stratumConfig.port
-  );
+const privateKey: PrivateKey = new PrivateKey(treasuryPrivateKey);
+const address: string = privateKey.toAddress(config.network).toString();
 
+// Create Templates instance
+const templates = new Templates(rpc, address, config.templates.cacheSize);
+
+for (const stratumConfig of config.stratum) {
   // Create Stratum instance
   const stratum = new Stratum(
     templates,
     stratumConfig.difficulty,
-    treasury.address,
+    stratumConfig.port,
     stratumConfig.sharesPerMinute,
     stratumConfig.clampPow2,
     stratumConfig.varDiff,
@@ -175,6 +170,8 @@ for (const stratumConfig of config.stratum) {
   // Store the stratums for later reference
   stratums.push(stratum);
 }
+
+treasury = new Treasury(rpc, serverInfo.networkId, address, config.treasury.fee);
 
 export const pool = new Pool(treasury, stratums);
 
@@ -206,11 +203,7 @@ export function calculatePoolHashrate(updatePool = true) {
   // Update pool hashrate only for estimate values and on regular interval
   if (updatePool) {
     const rateStr = stringifyHashrate(poolHashRate);
-    metrics.updateGaugeValue(
-      poolHashRateGauge,
-      ['pool', stratums[0].sharesManager.poolAddress],
-      poolHashRate
-    );
+    metrics.updateGaugeValue(poolHashRateGauge, ['pool', address], poolHashRate);
     monitoring.log(`Main: Total pool hash rate updated to ${rateStr}`);
   }
 }
