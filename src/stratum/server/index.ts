@@ -176,22 +176,22 @@ export default class Server {
               socket.write(JSON.stringify(response));
               this.sharesManager.sleep(1 * 1000);
               logger.warn(
-                'deleteSocket, Socket error',
+                'SocketEnd, Socket error',
                 this.getSocketLogData(socket, {
                   error: error.message,
                 })
               );
               socket.data.closeReason = `Error: ${error.message}`;
-              this.sharesManager.deleteSocket(socket);
+              socket.end();
             } else throw error;
           });
       } else {
         this.monitoring.debug(
           `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
-        logger.warn('deleteSocket, Socket parseMessage failed', this.getSocketLogData(socket));
+        logger.warn('SocketEnd, Socket parseMessage failed', this.getSocketLogData(socket));
         socket.data.closeReason = 'ParseMessage failure';
-        this.sharesManager.deleteSocket(socket);
+        socket.end();
       }
     }
 
@@ -201,9 +201,9 @@ export default class Server {
       this.monitoring.debug(
         `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
-      logger.warn('deleteSocket, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
+      logger.warn('SocketEnd, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
       socket.data.closeReason = 'CachedBytes length exceeded';
-      this.sharesManager.deleteSocket(socket);
+      socket.end();
     }
   }
 }

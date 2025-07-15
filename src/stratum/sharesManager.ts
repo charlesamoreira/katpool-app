@@ -396,7 +396,7 @@ export class SharesManager {
           lastSeen: Math.round((now - socket.data.connectedAt) / 1000) + 's ago',
         });
         // socket.data.closeReason = 'Stale socket';
-        // this.deleteSocket(socket);
+        // socket.end();
       });
 
       /*
