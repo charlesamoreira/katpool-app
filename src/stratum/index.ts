@@ -259,12 +259,6 @@ export default class Stratum extends EventEmitter {
             socket.data.asicType = AsicType.IceRiver;
           } else if (goldShellRegex.test(minerType)) {
             socket.data.asicType = AsicType.GoldShell;
-          } else {
-            logger.warn('Unknown miner type', {
-              port: this.port,
-              remoteAddress: socket.remoteAddress,
-              request: JsonBig.stringify(request.params, null, 4),
-            });
           }
           this.subscriptors.add(socket);
           this.emit('subscription', socket.remoteAddress, request.params[0]);
@@ -279,6 +273,7 @@ export default class Stratum extends EventEmitter {
             minerType: request.params[0] || 'unknown',
             asicType: socket.data.asicType,
             extraNonce: socket.data.extraNonce || '',
+            protocolVersion: request.params[1] || 'unknown',
           });
           break;
         }
