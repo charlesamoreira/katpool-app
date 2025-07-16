@@ -301,11 +301,11 @@ export default class Stratum extends EventEmitter {
             throw Error(
               `Invalid address, parsed address: ${address}, request: ${request.params[0]}`
             );
-          if (!name) throw Error(`Worker name is not set. ${request.params[0]}`);
+          if (!name) throw Error(`Worker name is not set. Request: ${request.params[0]}`);
 
           const worker: Worker = { address, name: name };
           if (socket.data.workers.has(worker.name))
-            throw Error(`Worker with duplicate name: ${name}`);
+            throw Error(`Worker with duplicate name: ${name} for address: ${address}.`);
           const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
           socket.data.workers.set(worker.name, worker);
           sockets.add(socket);
