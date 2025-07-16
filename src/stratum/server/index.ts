@@ -75,14 +75,6 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
               );
-              logger.info(
-                'deleteSocket, Socket on close - worker-disconnected',
-                this.getSocketLogData(socket, {
-                  workerName: worker.name,
-                  reason: closeReason,
-                })
-              );
-              this.sharesManager.deleteSocket(socket);
             }
           }
         },
@@ -173,8 +165,6 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
               );
-              socket.write(JSON.stringify(response));
-              this.sharesManager.sleep(1 * 1000);
               logger.warn(
                 'SocketEnd, Socket error',
                 this.getSocketLogData(socket, {
@@ -182,7 +172,7 @@ export default class Server {
                 })
               );
               socket.data.closeReason = `Error: ${error.message}`;
-              socket.end();
+              return socket.end(JSON.stringify(response));
             } else throw error;
           });
       } else {
