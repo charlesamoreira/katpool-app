@@ -299,6 +299,9 @@ export class SharesManager {
             workerRate = getAverageHashrateGHs(stats);
             debugHashrateCalculation(stats, address, workerRate);
           } else {
+            logger.warn(
+              `SharesManager ${this.port}: Worker ${address}.${workerName} is inactive, setting hashrate to 0`
+            );
             workerRate = 0;
           }
           rate += workerRate;
