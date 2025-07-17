@@ -432,7 +432,7 @@ export class SharesManager {
           );
           if (status) {
             workerRate = getAverageHashrateGHs(stats);
-            debugHashrateCalculation(stats);
+            debugHashrateCalculation(stats, address, workerRate);
           } else {
             workerRate = 0;
           }
