@@ -52,7 +52,7 @@ export function diffToHash(diff: number): number {
 }
 
 // Debug function to log hashrate calculation details
-export function debugHashrateCalculation(stats: WorkerStats, windowSize = WINDOW_SIZE): void {
+export function debugHashrateCalculation(stats: WorkerStats, address: string, workerRate: number, windowSize = WINDOW_SIZE): void {
   if (!stats.recentShares || stats.recentShares.isEmpty()) {
     monitoring.debug(`[DEBUG] No recent shares for worker ${stats.workerName}`);
     return;
@@ -81,11 +81,11 @@ export function debugHashrateCalculation(stats: WorkerStats, windowSize = WINDOW
   const totalWork = relevantShares.reduce((acc, share) => acc + diffToHash(share.difficulty), 0);
   const improvedHashrate = totalWork / Math.max(timeSpan, 1);
 
-  monitoring.debug(`[DEBUG] Hashrate calculation for ${stats.workerName}:`);
+  monitoring.debug(`[DEBUG] Hashrate calculation for address ${address} and worker ${stats.workerName}:`);
   monitoring.debug(`  - Shares in window: ${relevantShares.length}`);
   monitoring.debug(`  - Time span: ${timeSpan.toFixed(2)}s`);
   monitoring.debug(`  - Total work: ${totalWork.toFixed(2)}`);
   monitoring.debug(`  - Improved hashrate: ${improvedHashrate.toFixed(2)} GH/s`);
-  monitoring.debug(`  - Current hashrate: ${stats.hashrate.toFixed(2)} GH/s`);
+  monitoring.debug(`  - Current hashrate: ${workerRate} GH/s`);
   monitoring.debug(`  - Last share: ${new Date(stats.lastShare).toISOString()}`);
 }
