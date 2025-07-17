@@ -352,7 +352,6 @@ export class SharesManager {
               `SharesManager ${this.port}: Could not delete inactive worker: ${workerName}, address: ${address}`
             );
           }
-          metrics.updateGaugeValue(activeMinerGuage, [workerName, address, stats.asicType], status);
         });
         totalRate += rate;
       });
