@@ -52,44 +52,6 @@ services:
       options:
         tag: '{{.Name}}'
 
-  kaspad:
-    container_name: kaspad
-    image: supertypo/rusty-kaspad:v1.0.1 # Update this version for Rusty-Kaspa node upgrade
-    restart: unless-stopped
-    ports:
-      - '16111:16111/tcp'
-      - '16110:16110/tcp' # gRPC
-      - '17110:17110/tcp' # wRPC (borsh)
-      - '18110:18110/tcp' # wRPC (json)
-    volumes:
-      - /root/docker_deployment/kaspad_mainnet:/app/data/
-    networks:
-      - backend
-    command: kaspad --yes --nologfiles --disable-upnp --utxoindex --rpclisten=0.0.0.0:16110 --rpclisten-borsh=0.0.0.0:17110 --rpclisten-json=0.0.0.0:18110
-    logging:
-      driver: journald
-      options:
-        tag: '{{.Name}}'
-
-  # kaspad-test10: # REGULAR TESTNET
-  #   container_name: kaspad-test10
-  #   image: supertypo/rusty-kaspad:v1.0.1  # Update this version for Rusty-Kaspa node upgrade
-  #   restart: unless-stopped
-  #   ports:
-  #     - "16211:16211/tcp"
-  #     - "16210:16210/tcp" # gRPC
-  #     - "17210:17210/tcp" # wRPC (borsh)
-  #     - "18210:18210/tcp" # wRPC (json)
-  #   volumes:
-  #     - /root/docker_deployment/kaspad_testnet10:/app/data/
-  #   networks:
-  #     - backend
-  #   command: kaspad --yes --nologfiles --disable-upnp --utxoindex --testnet --rpclisten=0.0.0.0:16210 --rpclisten-borsh=0.0.0.0:17210 --rpclisten-json=0.0.0.0:18210
-  #   logging:
-  #     driver: journald
-  #     options:
-  #       tag: "{{.Name}}"
-
   go-app:
     image: ghcr.io/nacho-the-kat/katpool-blocktemplate-fetcher:beta-v1.0.2-main
     pull_policy: always
@@ -98,7 +60,7 @@ services:
       - .env
     depends_on:
       - redis
-      - kaspad
+      # - kaspad
     volumes:
       - ./config:/app/config
     networks:
@@ -117,7 +79,7 @@ services:
       - katpool-db
       - redis
       - katpool-monitor
-      - kaspad
+      # - kaspad
       # - kaspad-test10
     ports:
       - '1111:1111'
@@ -168,7 +130,7 @@ services:
     container_name: katpool-payment
     depends_on:
       - katpool-db
-      - kaspad
+      # - kaspad
       # - kaspad-test10
     volumes:
       - ./config:/app/config
@@ -314,3 +276,4 @@ networks:
   backend:
     driver: bridge
     name: katpool-app_backend
+    external: true

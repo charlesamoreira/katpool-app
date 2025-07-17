@@ -12,6 +12,7 @@ import Monitoring from '../monitoring/index.ts';
 import { DEBUG } from '../../index';
 import { Mutex } from 'async-mutex';
 import { metrics } from '../../index';
+import Denque from 'denque';
 import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
@@ -115,17 +116,17 @@ export default class Stratum extends EventEmitter {
         this.monitoring.debug(
           `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
         );
-        logger.info('deleteSocket, Socket readyState is closed', {
-          remoteAddress: socket?.remoteAddress || 'unknown',
-          workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-        });
+        // logger.info('deleteSocket, Socket readyState is closed', {
+        //   remoteAddress: socket?.remoteAddress || 'unknown',
+        //   workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+        // });
         this.subscriptors.delete(socket);
-        try {
-          socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
-          socket.end();
-        } catch (err) {
-          this.monitoring.error(`Stratum ${this.port}: Error deleting socket: ${err}`);
-        }
+        // try {
+        //   socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
+        //   socket.end();
+        // } catch (err) {
+        //   this.monitoring.error(`Stratum ${this.port}: Error deleting socket: ${err}`);
+        // }
       } else {
         socket.data.workers.forEach((worker, _) => {
           if (this.varDiff) {
@@ -300,13 +301,11 @@ export default class Stratum extends EventEmitter {
             throw Error(
               `Invalid address, parsed address: ${address}, request: ${request.params[0]}`
             );
-          if (!name) throw Error(`Worker name is not set. ${request.params[0]}`);
-
-          this.sharesManager.registerSocket(socket, address, name);
+          if (!name) throw Error(`Worker name is not set. Request: ${request.params[0]}`);
 
           const worker: Worker = { address, name: name };
           if (socket.data.workers.has(worker.name))
-            throw Error(`Worker with duplicate name: ${name}`);
+            throw Error(`Worker with duplicate name: ${name} for address: ${address}.`);
           const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
           socket.data.workers.set(worker.name, worker);
           sockets.add(socket);
@@ -319,15 +318,29 @@ export default class Stratum extends EventEmitter {
           }
 
           const minerData = this.sharesManager.getMiners().get(worker.address)!;
-          let workerStats = this.sharesManager.getOrCreateWorkerStats(
-            worker.name,
-            minerData,
-            userDiff,
-            socket.data.asicType,
-            varDiffStatus
-          );
           // if (!minerData.workerStats.has(worker.name)) {
-          minerData.workerStats.set(worker.name, workerStats);
+          minerData.workerStats.set(worker.name, {
+            blocksFound: 0,
+            sharesFound: 0,
+            sharesDiff: 0,
+            staleShares: 0,
+            invalidShares: 0,
+            workerName: worker.name,
+            startTime: Date.now(),
+            lastShare: Date.now(),
+            varDiffStartTime: Date.now(),
+            varDiffSharesFound: 0,
+            varDiffWindow: 0,
+            minDiff: userDiff,
+            recentShares: new Denque<{
+              timestamp: number;
+              difficulty: number;
+              workerName: string;
+            }>(),
+            hashrate: 0,
+            asicType: socket.data.asicType,
+            varDiffEnabled: varDiffStatus,
+          });
           // }
 
           // Set extranonce
@@ -345,7 +358,7 @@ export default class Stratum extends EventEmitter {
           socket.write(JSON.stringify(event) + '\n');
 
           // Set initial difficulty for this worker
-          workerStats = minerData.workerStats.get(worker.name)!;
+          const workerStats = minerData.workerStats.get(worker.name)!;
           socket.data.difficulty = workerStats.minDiff;
           this.reflectDifficulty(socket, worker.name);
           metrics.updateGaugeValue(

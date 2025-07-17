@@ -1,4 +1,5 @@
 import Monitoring from '../monitoring';
+import logger from '../monitoring/datadog';
 import { WINDOW_SIZE, type WorkerStats } from './sharesManager';
 
 const bigGig = Math.pow(10, 9);
@@ -23,7 +24,7 @@ export function stringifyHashrate(ghs: number): string {
 }
 
 export function getAverageHashrateGHs(stats: WorkerStats, windowSize = WINDOW_SIZE): number {
-  if (!stats.recentShares || stats.recentShares.isEmpty()) return 0;
+  // if (!stats.recentShares || stats.recentShares.isEmpty()) return 0;
   const relevantShares: { timestamp: number; difficulty: number }[] = [];
 
   // Use Denque's toArray() method to filter relevant shares
@@ -33,7 +34,12 @@ export function getAverageHashrateGHs(stats: WorkerStats, windowSize = WINDOW_SI
     }
   });
 
-  if (relevantShares.length === 0) return 0;
+  if (relevantShares.length === 0) {
+    logger.warn(
+      `Utils ${stats.workerName}: No relevant shares in the last ${windowSize / 1000} seconds`
+    );
+    return 0;
+  }
 
   const avgDifficulty =
     relevantShares.reduce((acc, share) => acc + diffToHash(share.difficulty), 0) /
@@ -52,7 +58,12 @@ export function diffToHash(diff: number): number {
 }
 
 // Debug function to log hashrate calculation details
-export function debugHashrateCalculation(stats: WorkerStats, address: string, workerRate: number, windowSize = WINDOW_SIZE): void {
+export function debugHashrateCalculation(
+  stats: WorkerStats,
+  address: string,
+  workerRate: number,
+  windowSize = WINDOW_SIZE
+): void {
   if (!stats.recentShares || stats.recentShares.isEmpty()) {
     monitoring.debug(`[DEBUG] No recent shares for worker ${stats.workerName}`);
     return;
@@ -81,7 +92,9 @@ export function debugHashrateCalculation(stats: WorkerStats, address: string, wo
   const totalWork = relevantShares.reduce((acc, share) => acc + diffToHash(share.difficulty), 0);
   const improvedHashrate = totalWork / Math.max(timeSpan, 1);
 
-  monitoring.debug(`[DEBUG] Hashrate calculation for address ${address} and worker ${stats.workerName}:`);
+  monitoring.debug(
+    `[DEBUG] Hashrate calculation for address ${address} and worker ${stats.workerName}:`
+  );
   monitoring.debug(`  - Shares in window: ${relevantShares.length}`);
   monitoring.debug(`  - Time span: ${timeSpan.toFixed(2)}s`);
   monitoring.debug(`  - Total work: ${totalWork.toFixed(2)}`);

@@ -163,7 +163,15 @@ password: x d=2048
 
 ### Start and check the pool
 
-To start the pool, you need to run `docker compose up -d` or the required command depending of your docker setup
+To start the pool, you need to run below commands
+```bash
+# First time setup - create the network and start kaspad
+docker network create katpool-app_backend
+docker compose -f kaspad-compose.yml up -d
+
+# Your regular workflow (kaspad is completely separate)
+docker compose up -d
+```
 You can use `docker logs -f katpool-app` to see the output of your pool instance. We recommned to use DEBUG=1 at the beginning.
 After ten minites you should be able to connect to the metrics, received info fo the state of the treasury and configurations via port 8080 at the following paths
 

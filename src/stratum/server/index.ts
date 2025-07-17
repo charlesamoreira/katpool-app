@@ -70,19 +70,23 @@ export default class Server {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.`
             );
+            logger.warn(
+              'Socket Disconnected before worker auth',
+              this.getSocketLogData(socket, {
+                closeReason,
+              })
+            );
           } else {
             for (const worker of workers) {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
               );
-              logger.info(
-                'deleteSocket, Socket on close - worker-disconnected',
+              logger.warn(
+                'Socket Worker disconnected',
                 this.getSocketLogData(socket, {
-                  workerName: worker.name,
-                  reason: closeReason,
+                  closeReason,
                 })
               );
-              this.sharesManager.deleteSocket(socket);
             }
           }
         },
@@ -91,7 +95,7 @@ export default class Server {
             `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Connection error: ${error}`
           );
           logger.error(
-            'Connection error',
+            'Socket Connection error',
             this.getSocketLogData(socket, {
               error: error.message,
             })
@@ -173,8 +177,6 @@ export default class Server {
               this.monitoring.debug(
                 `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'}: ${error.message}`
               );
-              socket.write(JSON.stringify(response));
-              this.sharesManager.sleep(1 * 1000);
               logger.warn(
                 'SocketEnd, Socket error',
                 this.getSocketLogData(socket, {
@@ -182,7 +184,7 @@ export default class Server {
                 })
               );
               socket.data.closeReason = `Error: ${error.message}`;
-              socket.end();
+              return socket.end(JSON.stringify(response));
             } else throw error;
           });
       } else {
