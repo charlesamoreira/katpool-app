@@ -296,7 +296,7 @@ export class SharesManager {
             status
           );
           if (status) {
-            workerRate = getAverageHashrateGHs(stats);
+            workerRate = getAverageHashrateGHs(stats, address);
             debugHashrateCalculation(stats, address, workerRate);
           } else {
             logger.warn(
