@@ -70,10 +70,22 @@ export default class Server {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.`
             );
+            logger.warn(
+              'Socket Disconnected before worker auth',
+              this.getSocketLogData(socket, {
+                closeReason,
+              })
+            );
           } else {
             for (const worker of workers) {
               this.monitoring.debug(
                 `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
+              );
+              logger.warn(
+                'Socket Worker disconnected',
+                this.getSocketLogData(socket, {
+                  closeReason,
+                })
               );
             }
           }
@@ -83,7 +95,7 @@ export default class Server {
             `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Connection error: ${error}`
           );
           logger.error(
-            'Connection error',
+            'Socket Connection error',
             this.getSocketLogData(socket, {
               error: error.message,
             })
