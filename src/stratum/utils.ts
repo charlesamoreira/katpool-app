@@ -23,7 +23,11 @@ export function stringifyHashrate(ghs: number): string {
   return `${hr.toFixed(2)}${unit}H/s`;
 }
 
-export function getAverageHashrateGHs(stats: WorkerStats, windowSize = WINDOW_SIZE): number {
+export function getAverageHashrateGHs(
+  stats: WorkerStats,
+  address: string,
+  windowSize = WINDOW_SIZE
+): number {
   // if (!stats.recentShares || stats.recentShares.isEmpty()) return 0;
   const relevantShares: { timestamp: number; difficulty: number }[] = [];
 
@@ -36,7 +40,7 @@ export function getAverageHashrateGHs(stats: WorkerStats, windowSize = WINDOW_SI
 
   if (relevantShares.length === 0) {
     logger.warn(
-      `Utils ${stats.workerName}: No relevant shares in the last ${windowSize / 1000} seconds`
+      `Utils ${address}.${stats.workerName}: No relevant shares in the last ${windowSize / 1000} seconds`
     );
     return 0;
   }

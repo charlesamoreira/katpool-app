@@ -95,7 +95,7 @@ export default class Stratum extends EventEmitter {
   }
 
   announceTemplate(id: string, hash: string, timestamp: bigint, header: IRawHeader) {
-    this.monitoring.log(`Stratum ${this.port}: Announcing new template ${id}`);
+    this.monitoring.log(`Stratum ${this.port}: Announcing new template ${id}, hash: ${hash}`);
     const tasksData: { [key in Encoding]?: string } = {};
     Object.values(Encoding)
       .filter(value => typeof value !== 'number')
@@ -335,7 +335,7 @@ export default class Stratum extends EventEmitter {
             recentShares: new Denque<{
               timestamp: number;
               difficulty: number;
-              workerName: string;
+              nonce: bigint;
             }>(),
             hashrate: 0,
             asicType: socket.data.asicType,
