@@ -348,6 +348,8 @@ export class SharesManager {
                     `SharesManager ${this.port}: Socket found for deletion: ${workerName}, address: ${address}`
                   );
                   found = true;
+                  socket.end();
+                  socket = skt;
                 }
               });
               minerData.sockets.delete(socket!);
