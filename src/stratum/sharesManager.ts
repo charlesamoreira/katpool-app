@@ -34,7 +34,7 @@ export interface WorkerStats {
   varDiffSharesFound: number;
   varDiffWindow: number;
   minDiff: number;
-  recentShares: Denque<{ timestamp: number; difficulty: number }>;
+  recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
   hashrate: number;
   asicType: AsicType;
   varDiffEnabled: boolean;
@@ -109,7 +109,7 @@ export class SharesManager {
         varDiffSharesFound: 0,
         varDiffWindow: 0,
         minDiff: this.stratumInitDiff, // Initial difficulty
-        recentShares: new Denque<{ timestamp: number; difficulty: number; workerName: string }>(),
+        recentShares: new Denque<{ timestamp: number; difficulty: number; nonce: bigint }>(),
         hashrate: 0,
         asicType: AsicType.Unknown,
         varDiffEnabled: varDiffStatus,
@@ -132,22 +132,6 @@ export class SharesManager {
     templates: Templates,
     id: string
   ) {
-    // Critical Section: Check and Add Share
-    if (this.contributions.has(nonce)) {
-      metrics.updateGaugeInc(minerDuplicatedShares, [minerId, address]);
-      this.monitoring.log(`SharesManager ${this.port}: Duplicate share for miner - ${minerId}`);
-      logger.warn('Duplicate share detected', {
-        minerId,
-        address,
-        port: this.port,
-        nonce: nonce.toString(),
-      });
-      return;
-    } else {
-      // this.contributions.set(nonce, { address, difficulty, timestamp: Date.now(), minerId });
-    }
-
-    const timestamp = Date.now();
     let minerData = this.miners.get(address);
     if (!minerData) {
       minerData = {
@@ -158,6 +142,32 @@ export class SharesManager {
     }
 
     const workerStats = this.getOrCreateWorkerStats(minerId, minerData);
+    // Critical Section: Check and Add Share
+    let found = false;
+
+    for (let i = 0; i < workerStats.recentShares.size(); i++) {
+      const share = workerStats.recentShares.get(i);
+      if (share?.nonce === nonce) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      metrics.updateGaugeInc(minerDuplicatedShares, [minerId, address]);
+      this.monitoring.log(`SharesManager ${this.port}: Duplicate share for miner - ${minerId}`);
+      logger.warn('Duplicate share detected', {
+        minerId,
+        address,
+        port: this.port,
+        nonce: nonce.toString(),
+      });
+      return;
+    }
+    // else {
+    //   // this.contributions.set(nonce, { address, difficulty, timestamp: Date.now(), minerId });
+    // }
+
+    const timestamp = Date.now();
     const currentDifficulty = workerStats.minDiff || difficulty;
 
     if (DEBUG)
@@ -263,7 +273,7 @@ export class SharesManager {
     workerStats.minDiff = currentDifficulty;
 
     // Update recentShares with the new share
-    workerStats.recentShares.push({ timestamp: Date.now(), difficulty: currentDifficulty });
+    workerStats.recentShares.push({ timestamp: Date.now(), difficulty: currentDifficulty, nonce });
 
     while (
       workerStats.recentShares.length > 0 &&
