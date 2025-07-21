@@ -36,7 +36,6 @@
     "axios": "^1.7.2",
     "axios-retry": "^4.5.0",
     "blake2b": "^2.1.4",
-    "bun": "^1.1.33",
     "chalk": "^5.4.1",
     "consul": "^1.2.0",
     "consul-client": "^5.0.0",
