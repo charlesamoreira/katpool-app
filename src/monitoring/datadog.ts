@@ -16,13 +16,13 @@ interface LogContext {
 
 const sendLog = async (level: string, message: string, context: LogContext = {}) => {
   const baseLogObject = {
-    ddtags: 'team:production', // This tag is responsible for datadog retention period
+    ddtags: '',
     ddsource: 'nodejs',
     service: DATADOG_SERVICE_NAME || 'dev-katpool-app',
     timestamp: new Date().toISOString(),
   };
 
-  // change retention period based on service name
+  // set tag based on service name, tag does change retention period
   if (DATADOG_SERVICE_NAME === 'prod-katpool-app') {
     baseLogObject.ddtags = 'team:production';
   }
