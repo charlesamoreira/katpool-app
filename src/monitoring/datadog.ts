@@ -24,7 +24,7 @@ const sendLog = async (level: string, message: string, context: LogContext = {})
 
   // set tag based on service name, tag does change retention period
   if (DATADOG_SERVICE_NAME === 'prod-katpool-app') {
-    baseLogObject.ddtags = 'team:production';
+    baseLogObject.ddtags = 'retention:production';
   }
 
   await axios.post(
