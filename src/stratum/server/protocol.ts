@@ -94,7 +94,7 @@ export function parseMessage(message: string, port: number) {
 
     return parsedMessage;
   } catch (error) {
-    // monitoring.error(`protocol ${port}: JSON parse failed: ${message.slice(0, 100)} - ${error}`);
+    // monitoring.error(`protocol ${port}: JSON parse failed: ${message.slice(0, 100)} - `, error);
     return undefined;
   }
 }

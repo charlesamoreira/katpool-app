@@ -56,8 +56,8 @@ async function uploadFile(authClient: any, fileName: string) {
       },
     });
     monitoring.log(`CloudBackup: Permission granted to: ${backupEmailAddress}`);
-  } catch (err) {
-    monitoring.error(`CloudBackup: Uploading file ${fileName}: ${err.message}`);
+  } catch (error) {
+    monitoring.error(`CloudBackup: Uploading file ${fileName}: `, error);
   }
 }
 

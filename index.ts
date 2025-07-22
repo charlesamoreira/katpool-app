@@ -33,7 +33,7 @@ async function shutdown() {
       await treasury.unregisterProcessor();
     }
   } catch (error) {
-    monitoring.error(`Main: Removing and unsubscribing events: ${error}`);
+    monitoring.error(`Main: Removing and unsubscribing events: `, error);
   }
   monitoring.log('Graceful shutdown completed.');
   process.exit();
@@ -46,12 +46,12 @@ process.on('exit', code => {
   monitoring.log(`Main: 🛑 Process is exiting with code: ${code}`);
 });
 
-process.on('uncaughtException', err => {
-  monitoring.error(`Main: Uncaught Exception: ${err}`);
+process.on('uncaughtException', error => {
+  monitoring.error(`Main: Uncaught Exception: `, error);
 });
 
-process.on('unhandledRejection', err => {
-  monitoring.error(`Main: Unhandled Rejection: ${err}`);
+process.on('unhandledRejection', error => {
+  monitoring.error(`Main: Unhandled Rejection: `, error);
 });
 
 export let DEBUG = 0;
@@ -80,7 +80,7 @@ export async function sendConfig() {
 
     monitoring.log(`Main: Config sent to API server. Response status: ${response.status}`);
   } catch (error) {
-    monitoring.error(`Main: Error sending config: ${error}`);
+    monitoring.error(`Main: Error sending config: `, error);
   }
 }
 
@@ -112,7 +112,7 @@ try {
     }
   });
 } catch (error) {
-  monitoring.error(`Main: Error during RPC connect: ${error}`);
+  monitoring.error(`Main: Error during RPC connect: `, error);
 }
 
 rpc.addEventListener('disconnect', async event => {
@@ -125,8 +125,8 @@ try {
     timeoutDuration: RPC_TIMEOUT, // rpc timeout duration
     strategy: ConnectStrategy.Retry, // retry strategy for disconnection
   });
-} catch (err) {
-  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: ${err}`);
+} catch (error) {
+  monitoring.error(`Main: Error while connecting to rpc url : ${rpc.url} Error: `, error);
 }
 
 monitoring.log(`Main: RPC connection started`);

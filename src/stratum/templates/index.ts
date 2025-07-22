@@ -40,11 +40,11 @@ export default class Templates {
         // TODO: remove this later, or extend monitoring logger for dd
         logger.info(`Templates: Connection to redis established`);
       });
-      this.subscriber.on('error', err => {
-        this.monitoring.error(`Templates: Redis client error: ${err}`);
+      this.subscriber.on('error', error => {
+        this.monitoring.error(`Templates: Redis client error: `, error);
       });
-    } catch (err) {
-      this.monitoring.error(`Templates: Error connecting to redis : ${err}`);
+    } catch (error) {
+      this.monitoring.error(`Templates: Error connecting to redis : `, error);
     }
   }
 
@@ -75,12 +75,13 @@ export default class Templates {
         allowNonDAABlocks: false,
       });
     } catch (error) {
+      const stack = error instanceof Error ? error.stack : undefined;
       await logger.error('after rpc.submitBlock', {
         traceId,
         error,
-        stack: error instanceof Error && error.stack ? error.stack : undefined,
+        stack,
       });
-      this.monitoring.error(`Templates: Block submit error: ${error}`);
+      this.monitoring.debug(`Templates: ERROR - Block submit : ${error} - ${stack}`);
       return;
     }
 
@@ -269,11 +270,11 @@ export default class Templates {
           try {
             callback(id, proofOfWork.prePoWHash, header.timestamp, template.header);
           } catch (error) {
-            this.monitoring.error(`Templates: Error in callback: ${error}`);
+            this.monitoring.error(`Templates: Error in callback: `, error);
           }
         });
-      } catch (err) {
-        this.monitoring.error(`Templates: Error processing template: ${err}`);
+      } catch (error) {
+        this.monitoring.error(`Templates: Error processing template: `, error);
       }
     });
     // })
