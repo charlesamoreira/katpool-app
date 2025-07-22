@@ -1,11 +1,11 @@
 import type { Socket } from 'bun';
 import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
-import Server, { type Miner, type Worker } from './server';
+import Server from './server';
 import { type Request, type Response, type Event, StratumError } from './server/protocol';
 import type Templates from './templates/index.ts';
 import { Address, type IRawHeader } from '../../wasm/kaspa';
-import { Encoding, encodeJob } from './templates/jobs/encoding.ts';
+import { encodeJob } from './templates/jobs/encoding.ts';
 import { SharesManager } from './sharesManager';
 import { jobsNotFound, activeMinerGuage, varDiff } from '../prometheus';
 import Monitoring from '../monitoring/index.ts';
@@ -16,19 +16,11 @@ import Denque from 'denque';
 import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
+import { AsicType, Encoding, type Miner, type Worker } from '../types/index.ts';
 
 const bitMainRegex = new RegExp('.*(GodMiner).*', 'i');
 const iceRiverRegex = new RegExp('.*(IceRiverMiner).*', 'i');
 const goldShellRegex = new RegExp('.*(BzMiner).*', 'i');
-
-export enum AsicType {
-  IceRiver = 'IceRiver',
-  Bitmain = 'Bitmain',
-  GoldShell = 'GoldShell',
-  Unknown = '',
-}
-
-export type AsicTypeorCustom = AsicType | string;
 
 const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;

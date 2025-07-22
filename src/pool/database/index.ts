@@ -1,18 +1,9 @@
 import { Pool } from 'pg';
 import Monitoring from '../../monitoring';
 import JsonBig from 'json-bigint';
+import type { MinerRow, MinerBalanceRow } from '../../types';
 
-type Miner = {
-  balance: bigint;
-};
-
-type MinerBalanceRow = {
-  miner_id: string;
-  wallet: string;
-  balance: string;
-};
-
-const defaultMiner: Miner = {
+const defaultMiner: MinerRow = {
   balance: 0n,
 };
 

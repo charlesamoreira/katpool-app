@@ -1,6 +1,5 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from '../../wasm/kaspa';
-import { type Miner, type Worker } from './server';
 import { stringifyHashrate, getAverageHashrateGHs, debugHashrateCalculation } from './utils';
 import Monitoring from '../monitoring';
 import { DEBUG } from '../../index';
@@ -14,50 +13,23 @@ import {
 } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
-import { AsicType, type AsicTypeorCustom } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
+import {
+  AsicType,
+  type Contribution,
+  type MinerData,
+  type WorkerStats,
+  type Worker,
+} from '../types';
 import JsonBig from 'json-bigint';
 
 export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
 
-export interface WorkerStats {
-  blocksFound: number;
-  sharesFound: number;
-  sharesDiff: number;
-  staleShares: number;
-  invalidShares: number;
-  workerName: string;
-  startTime: number;
-  lastShare: number;
-  varDiffStartTime: number;
-  varDiffSharesFound: number;
-  varDiffWindow: number;
-  minDiff: number;
-  recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
-  hashrate: number;
-  asicType: AsicTypeorCustom;
-  varDiffEnabled: boolean;
-}
-
-type MinerData = {
-  sockets: Set<Socket<Miner>>;
-  workerStats: Map<string, WorkerStats>;
-};
-
 const varDiffThreadSleep: number = 10;
 const varDiffRejectionRateThreshold: number = 20; // If rejection rate exceeds threshold, set difficulty based on hash rate.
 const zeroDateMillS: number = new Date(0).getMilliseconds();
-
-export type Contribution = {
-  address: string;
-  difficulty: number;
-  timestamp: number;
-  minerId: string;
-  jobId: string;
-  daaScore: bigint;
-};
 
 export class SharesManager {
   private miners: Map<string, MinerData> = new Map();
