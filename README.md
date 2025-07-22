@@ -8,6 +8,7 @@ A comprehensive mining pool implementation for Kaspa using the rusty-kaspa WASM 
 <summary>Docker Compose Setup (Recommended)</summary>
 
 1. **Clone and Setup**
+
    ```bash
    git clone <repository-url>
    cd katpool
@@ -15,6 +16,7 @@ A comprehensive mining pool implementation for Kaspa using the rusty-kaspa WASM 
    ```
 
 2. **Build and Run**
+
    ```bash
    docker build -t ghcr.io/<your-username>/katpool-app:0.65 .
    docker compose up -d
@@ -54,19 +56,19 @@ Block templates are fetched from the GRPC endpoint using a Go-based service. The
 
 ![Internal Container Design](images/katpool-internal-container-design.jpg)
 
-| Service | Description |
-|---------|-------------|
-| **kaspad** | Kaspa full node |
-| **katpool-app** | Main application (core component) |
-| **katpool-db** | PostgreSQL database instance |
-| **katpool-db-migrate** | Database schema migration handler |
-| **katpool-backup** | Database backup service with Google Drive integration |
-| **katpool-monitor** | Prometheus metrics and REST API service |
-| **prometheus** | Metrics visualization and monitoring |
-| **go-app** | Block template fetcher via gRPC |
-| **redis** | Message broker for block templates |
-| **katpool-payment** | Payment processing service |
-| **nginx** | Reverse proxy and load balancer |
+| Service                | Description                                           |
+| ---------------------- | ----------------------------------------------------- |
+| **kaspad**             | Kaspa full node                                       |
+| **katpool-app**        | Main application (core component)                     |
+| **katpool-db**         | PostgreSQL database instance                          |
+| **katpool-db-migrate** | Database schema migration handler                     |
+| **katpool-backup**     | Database backup service with Google Drive integration |
+| **katpool-monitor**    | Prometheus metrics and REST API service               |
+| **prometheus**         | Metrics visualization and monitoring                  |
+| **go-app**             | Block template fetcher via gRPC                       |
+| **redis**              | Message broker for block templates                    |
+| **katpool-payment**    | Payment processing service                            |
+| **nginx**              | Reverse proxy and load balancer                       |
 
 </details>
 
@@ -83,8 +85,9 @@ Block templates are fetched from the GRPC endpoint using a Go-based service. The
 4. Rename the `nodejs` folder to `wasm` and place it in your project repository
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The `wasm` folder should contain:
-  - `kaspa`
-  - `kaspa-dev`
+
+- `kaspa`
+- `kaspa-dev`
 
 5. Ensure import paths in your code reference the local `wasm` folder correctly
 
@@ -124,20 +127,21 @@ Create the following required files and directories:
 Review and update `config/config.json` for your pool setup. All backend services share this configuration file.
 
 **Key Configuration Notes:**
+
 - **Pool[0]** is configured as a variable difficulty pool (default port: 8888)
 - Supports user-defined difficulty via password field: `d=2048`
 - Use [Crontab.guru](https://crontab.guru/) to configure cron expressions
 
 #### Important Configuration Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `payoutCronSchedule` | Payout schedule cron expression | `* */12 * * *` (twice daily) |
-| `backupCronSchedule` | Backup schedule cron expression | `* */12 * * *` (twice daily) |
-| `payoutAlertCronSchedule` | Telegram alert schedule | `0 1,7,13,19 * * *` (4x daily) |
-| `thresholdAmount` | Minimum payout amount (sompi) | - |
-| `block_wait_time_milliseconds` | Block request timeout (seconds) | - |
-| `extraNonceSize` | Extra nonce size (0-3 bytes) | - |
+| Parameter                      | Description                     | Default                        |
+| ------------------------------ | ------------------------------- | ------------------------------ |
+| `payoutCronSchedule`           | Payout schedule cron expression | `* */12 * * *` (twice daily)   |
+| `backupCronSchedule`           | Backup schedule cron expression | `* */12 * * *` (twice daily)   |
+| `payoutAlertCronSchedule`      | Telegram alert schedule         | `0 1,7,13,19 * * *` (4x daily) |
+| `thresholdAmount`              | Minimum payout amount (sompi)   | -                              |
+| `block_wait_time_milliseconds` | Block request timeout (seconds) | -                              |
+| `extraNonceSize`               | Extra nonce size (0-3 bytes)    | -                              |
 
 </details>
 
@@ -147,10 +151,12 @@ Review and update `config/config.json` for your pool setup. All backend services
 The pool supports multiple difficulty ports defined in `config/config.json`.
 
 **Variable Difficulty (Port 8888):**
+
 - Automatically adjusts based on miner performance
 - Supports custom difficulty via password field: `d=2048`
 
 **Static Difficulty Ports:**
+
 - Fixed difficulty levels
 - Cannot be overridden via password field
 
@@ -221,6 +227,7 @@ bun run index.ts
 ```
 
 **Requirements:**
+
 - All environment variables configured
 - WASM SDK in `wasm/` folder
 - All dependent services running
@@ -242,6 +249,7 @@ psql -U <your-db-user> -d <your-db-name> -f init.sql
 ```
 
 **Prerequisites:**
+
 - PostgreSQL database and user must exist
 - User must have appropriate privileges
 
@@ -250,16 +258,19 @@ psql -U <your-db-user> -d <your-db-name> -f init.sql
 Ensure all services are running before starting the application:
 
 ✅ **Core Services:**
+
 - `kaspad` - Kaspa full node
 - `katpool-db` - PostgreSQL database
 - `redis` - Message broker
 
 ✅ **Application Services:**
+
 - `katpool-app` - Main application
 - `go-app` - Block template fetcher
 - `katpool-payment` - Payment processor
 
 ✅ **Supporting Services:**
+
 - `katpool-monitor` - Metrics and APIs
 - `prometheus` - Monitoring
 - `nginx` - Reverse proxy
@@ -273,12 +284,12 @@ Ensure all services are running before starting the application:
 
 After 10 minutes of operation, the following endpoints will be available:
 
-| Endpoint | Description |
-|----------|-------------|
-| `http://<pool-server>:8080` | Prometheus metrics interface |
-| `http://<pool-server>:8080/config` | Pool configuration |
-| `http://<pool-server>:8080/balance` | Miner balances |
-| `http://<pool-server>:8080/total` | Total rewards distributed |
+| Endpoint                            | Description                  |
+| ----------------------------------- | ---------------------------- |
+| `http://<pool-server>:8080`         | Prometheus metrics interface |
+| `http://<pool-server>:8080/config`  | Pool configuration           |
+| `http://<pool-server>:8080/balance` | Miner balances               |
+| `http://<pool-server>:8080/total`   | Total rewards distributed    |
 
 </details>
 
@@ -397,12 +408,14 @@ Optional database backup service can be enabled by:
 The Stratum class manages the stratum protocol implementation:
 
 **Key Features:**
+
 - Handles miner connections and subscriptions
 - Manages contribution tracking
 - Processes share submissions
 - Implements variable difficulty adjustments
 
 **Core Methods:**
+
 - `addShare()` - Validates and processes submitted shares
 - `announceTemplate()` - Distributes new jobs to miners
 - `onMessage()` - Handles stratum protocol messages
@@ -415,12 +428,14 @@ The Stratum class manages the stratum protocol implementation:
 The Templates class manages block template lifecycle:
 
 **Responsibilities:**
+
 - Subscribes to Redis channel for new templates
 - Manages template cache with configurable size
 - Creates PoW objects for mining validation
 - Submits completed blocks to Kaspa network
 
 **Key Methods:**
+
 - `getHash()` - Retrieves hash for job ID
 - `getPoW()` - Gets PoW object for validation
 - `submit()` - Submits completed blocks
@@ -434,12 +449,14 @@ The Templates class manages block template lifecycle:
 The Pool class coordinates all pool components:
 
 **Functions:**
+
 - Manages treasury and stratum interactions
 - Handles database operations
 - Implements monitoring and logging
 - Coordinates reward allocation
 
 **Core Operations:**
+
 - `allocate()` - Distributes rewards based on contributions
 - Event handling for subscriptions and coinbase transactions
 - Database integration for balance management
