@@ -60,7 +60,6 @@ export type Contribution = {
 };
 
 export class SharesManager {
-  private contributions: Map<bigint, Contribution> = new Map();
   private miners: Map<string, MinerData> = new Map();
   private monitoring: Monitoring;
   private shareWindow: Denque<Contribution>;
@@ -164,9 +163,6 @@ export class SharesManager {
       });
       return;
     }
-    // else {
-    //   // this.contributions.set(nonce, { address, difficulty, timestamp: Date.now(), minerId });
-    // }
 
     const timestamp = Date.now();
     const currentDifficulty = workerStats.minDiff || difficulty;
@@ -411,28 +407,6 @@ export class SharesManager {
 
   getMiners() {
     return this.miners;
-  }
-
-  private getRecentContributions(windowMillis: number): Contribution[] {
-    const now = Date.now();
-    return Array.from(this.contributions.values()).filter(contribution => {
-      return now - contribution.timestamp <= windowMillis;
-    });
-  }
-
-  // Updated dumpContributions method
-  dumpContributions(windowMillis: number = 10000): Contribution[] {
-    const contributions = this.getRecentContributions(windowMillis);
-    if (DEBUG)
-      this.monitoring.debug(
-        `SharesManager ${this.port}: Amount of contributions within the last ${windowMillis}ms: ${contributions.length}`
-      );
-    this.contributions.clear();
-    return contributions;
-  }
-
-  resetContributions() {
-    this.contributions.clear();
   }
 
   updateSocketDifficulty(address: string, workerName: string, newDifficulty: number) {
