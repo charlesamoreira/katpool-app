@@ -144,12 +144,18 @@ export default class Stratum extends EventEmitter {
               // Store current difficulty before any updates
               const currentDifficulty = socket.data.difficulty;
               if (varDiff != currentDifficulty && varDiff != 0) {
-                this.monitoring.debug(
-                  `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
+                const updated = this.sharesManager.updateSocketDifficulty(
+                  worker.address,
+                  worker.name,
+                  varDiff
                 );
-                this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
-                this.reflectDifficulty(socket, worker.name);
-                this.sharesManager.startClientVardiff(worker);
+                if (updated) {
+                  this.monitoring.debug(
+                    `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
+                  );
+                  this.reflectDifficulty(socket, worker.name);
+                  this.sharesManager.startClientVardiff(worker);
+                }
               }
             }
           }
