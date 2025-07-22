@@ -1,580 +1,475 @@
 # KASPA Mining Pool using rusty-kaspa WASM
 
-Once the RPC connection is established, the pool initializes the treasury, which listens for UTXO events. When these events occur, the treasury processes them to track available funds. Next, templates are fetched and stored to generate job IDs for miners. These jobs are then distributed to miners for processing. Miners connect to the pool via the stratum protocol, subscribing and submitting their work (shares).
+A comprehensive mining pool implementation for Kaspa using the rusty-kaspa WASM SDK. This pool manages miner connections, validates shares, distributes rewards, and handles block submissions through a robust stratum protocol implementation.
 
-The shares are validated, and their difficulty is checked. Valid shares are counted, and blocks found are recorded. The pool uses this data to calculate the total hash rate and the contributions of each miner. Periodically, the pool distributes rewards based on each miner's contribution, allocating payments from the treasury and having them ready for the next payment cycle.
+## Quick Start
 
-## How the block templates are fetched
+<details>
+<summary>Docker Compose Setup (Recommended)</summary>
 
-We are fetching Block templates from GRPC endpoint. This is done through a Go-script. And this templates are passed on to a Redis channel.
+1. **Clone and Setup**
+   ```bash
+   git clone <repository-url>
+   cd katpool
+   cp .env.sample .env
+   ```
 
-## Download Kaspa WASM SDK
+2. **Build and Run**
+   ```bash
+   docker build -t ghcr.io/<your-username>/katpool-app:0.65 .
+   docker compose up -d
+   ```
+
+3. **Monitor**
+   ```bash
+   docker logs -f katpool-app
+   ```
+
+Access pool at: `http://<pool-server>:8080`
+
+</details>
+
+## Architecture Overview
+
+<details>
+<summary>System Workflow</summary>
+
+The pool operates through the following workflow:
+
+1. **RPC Connection**: Establishes connection to the Kaspa network
+2. **Template Management**: Fetches and stores block templates to generate job IDs
+3. **Job Distribution**: Distributes mining jobs to connected miners via stratum protocol
+4. **Treasury Initialization**: Listens for UTXO events and tracks available funds
+5. **Share Validation**: Validates submitted shares and checks difficulty requirements
+6. **Reward Distribution**: Calculates contributions and distributes rewards periodically
+
+### Block Template Fetching
+
+Block templates are fetched from the GRPC endpoint using a Go-based service. These templates are then passed to a Redis channel for consumption by the main pool application.
+
+</details>
+
+<details>
+<summary>Container Services</summary>
+
+![Internal Container Design](images/katpool-internal-container-design.jpg)
+
+| Service | Description |
+|---------|-------------|
+| **kaspad** | Kaspa full node |
+| **katpool-app** | Main application (core component) |
+| **katpool-db** | PostgreSQL database instance |
+| **katpool-db-migrate** | Database schema migration handler |
+| **katpool-backup** | Database backup service with Google Drive integration |
+| **katpool-monitor** | Prometheus metrics and REST API service |
+| **prometheus** | Metrics visualization and monitoring |
+| **go-app** | Block template fetcher via gRPC |
+| **redis** | Message broker for block templates |
+| **katpool-payment** | Payment processing service |
+| **nginx** | Reverse proxy and load balancer |
+
+</details>
+
+## Prerequisites
+
+<details>
+<summary>Download Kaspa WASM SDK</summary>
 
 **Note:** This setup is intended for **local development only**.
 
-### Steps:
+1. Download the latest Kaspa WASM SDK from [rusty-kaspa/releases](https://github.com/kaspanet/rusty-kaspa/releases)
+2. Locate and download: `kaspa-wasm32-sdk-<LATEST_VERSION>.zip`
+3. Extract the archive and locate the `nodejs` directory
+4. Rename the `nodejs` folder to `wasm` and place it in your project repository
 
-1. Download the latest Kaspa WASM SDK from the official Rusty-Kaspa GitHub releases:
-   [rusty-kaspa/releases](https://github.com/kaspanet/rusty-kaspa/releases)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The `wasm` folder should contain:
+  - `kaspa`
+  - `kaspa-dev`
 
-2. Locate and download the file named:
-   kaspa-wasm32-sdk-<LATEST_VERSION>.zip
+5. Ensure import paths in your code reference the local `wasm` folder correctly
 
-Example: `kaspa-wasm32-sdk-v1.0.0.zip`
+</details>
 
-3. Extract the archive and locate the `nodejs` directory inside it.
+<details>
+<summary>Required Files and Directories</summary>
 
-4. Rename the extracted `nodejs` folder to `wasm` and place it inside your project repository.
+Create the following required files and directories:
 
-The folder should contain:
+- `prometheus.yml` - Prometheus scrape configuration
+- `init.sql` - Database initialization script
+- `migrate.sql` - Database migration script
+- `nginx.conf` - Nginx configuration
+- `config/` - Configuration directory
+- `wasm/` - WASM SDK folder
+- `.env` - Environment variables (copy from `.env.sample`)
 
-- `kaspa`
-- `kaspa-dev`
+</details>
 
-5. Ensure that the import paths in your code correctly reference the local `wasm` folder.
+## Configuration
 
-## Docker Compose
+<details>
+<summary>Environment Setup</summary>
 
-The recommended installation is via docker compose. There are many instances that are required to have a full functionality of the pool solution.
+1. Copy `.env.sample` to `.env` and configure all required variables
+2. All backend services share the same configuration file
+3. **Security Note**: In future versions, private keys should be isolated to payment service only
 
-![internal container design](images/katpool-internal-container-design.jpg)
+**Important**: Update `prometheus.yml` targets to match your deployment.
 
-### Container Instances
+</details>
 
-- **kaspad**  
-  Kaspa full node.
+<details>
+<summary>Pool Configuration</summary>
 
-- **katpool-app**  
-  Main application. This is the core component of the repository.
+Review and update `config/config.json` for your pool setup. All backend services share this configuration file.
 
-- **katpool-db**  
-  PostgreSQL database instance.
+**Key Configuration Notes:**
+- **Pool[0]** is configured as a variable difficulty pool (default port: 8888)
+- Supports user-defined difficulty via password field: `d=2048`
+- Use [Crontab.guru](https://crontab.guru/) to configure cron expressions
 
-- **katpool-db-migrate**  
-  Handles database schema changes such as altering and adding new tables.
+#### Important Configuration Parameters
 
-- **katpool-backup**  
-  Performs regular database dumps and uploads them to Google Drive.
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `payoutCronSchedule` | Payout schedule cron expression | `* */12 * * *` (twice daily) |
+| `backupCronSchedule` | Backup schedule cron expression | `* */12 * * *` (twice daily) |
+| `payoutAlertCronSchedule` | Telegram alert schedule | `0 1,7,13,19 * * *` (4x daily) |
+| `thresholdAmount` | Minimum payout amount (sompi) | - |
+| `block_wait_time_milliseconds` | Block request timeout (seconds) | - |
+| `extraNonceSize` | Extra nonce size (0-3 bytes) | - |
 
-- **[katpool-monitor](https://github.com/Nacho-the-Kat/katpool-monitor)**  
-  Initializes with configuration from `katpool-app`, shares miner balances and totals as Prometheus metrics, and serves Express REST APIs.
+</details>
 
-- **prometheus**  
-  Pulls metrics from `katpool-monitor` and visualizes pool statistics.
+<details>
+<summary>Mining Port Configuration</summary>
 
-- **[go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher)**  
-  Fetches new block templates from the Kaspa network via gRPC and publishes them to a Redis channel. `katpool-app` listens to this channel.
+The pool supports multiple difficulty ports defined in `config/config.json`.
 
-- **redis**  
-  Acts as a messaging channel between `go-app` and `katpool-app` for block templates.
+**Variable Difficulty (Port 8888):**
+- Automatically adjusts based on miner performance
+- Supports custom difficulty via password field: `d=2048`
 
-- **[katpool-payment](https://github.com/Nacho-the-Kat/katpool-payment)**  
-  Handles payment processing. Reads balances from the database and distributes payouts.
+**Static Difficulty Ports:**
+- Fixed difficulty levels
+- Cannot be overridden via password field
 
-- **nginx**  
-  Serves as the reverse proxy for routing incoming HTTP requests to appropriate services.
-
-### Create env variables
-
-Currently, all backend services and instances rely on this shared `.env` file. A sample template is provided in `.env.sample` for reference.
-
-In the future, it is recommended to isolate certain environment variables based on the application’s role. Specifically, the private key should be assigned only to the `payment` app. The `katpool-app` instance does not require access to this key and should not be granted it for security and clarity of responsibility.
-
-This separation will improve security, reduce unnecessary exposure, and better align with the principle of least privilege.
-
-### requires folders and files
-
-- prometheus.yml: prometheus scrape configuration
-- init.sql: to setup the database the first time it's started
-- migrate.sql: to make changes to current database. Add new table, update existing table. NOTE: Overwrite the content of this file for performing latest changes.
-- nginx.conf
-- config
-- **wasm** folder must the also available. Check download link above [For running outside Docker container]
-
-### Configuration
-
-- In `prometheus.yml` **update the targets**.
-
-- Review the `config/config.json` file and update it as needed for your pool setup. Currently, **all backend services** and instances rely on this **shared configuration file**.
-  - **Assumption**: The **initial pool[0th pool]** is a **variable difficulty (var diff) pool** with a default port set to **8888**. Additionally, it includes support for **user-defined difficulty** settings.
-    - To enable user-defined difficulty, user needs to set difficulty as `d=2048` in password field.
-
-  - Please refer to [Crontab.guru](https://crontab.guru/) to set these two cron expressions.
-  * **payoutCronSchedule**: cron schedule expression for payout. If not set or invalid, it will be defaulted to Twice a day (\* _/12 _ \* \*).
-
-  * **backupCronSchedule**: cron schedule expression for backup. If not set or invalid, it will be defaulted to Twice a day (\* _/12 _ \* \*).
-
-  * **payoutAlertCronSchedule**: cron schedule expression for Telegram alerting. If not set or invalid, it will be defaulted to four times a day (0 1,7,13,19 \* \* \*).
-
-  * **thresholdAmount**: Miner rewards will be paid above this minimum amount in sompi
-
-  * **block_wait_time_milliseconds**: time to wait since last new block message from kaspad before manually requesting a new block.
-    - **Note**: It is to be set in **seconds**.
-
-  * **extraNonceSize** The value should be between 0 to 3.
-
-### Container Images
-
-We provide a `docker-compose.yml` setup for easier deployment. However, since this is an open-source project and no pre-built container images are published, you are expected to build the images locally and update the image URLs accordingly.
-
-To build the `katpool-app` image locally, run the following command from the root of the repository (where the `Dockerfile` is located):
-
-```
-docker build -t ghcr.io/<your-ghcr-username>/katpool-app:0.65 .
-```
-
-Once built, make sure to push the image to your GitHub Container Registry (GHCR) or your preferred container registry.
-
-Then, update the `docker-compose.yml` and any relevant deployment files to use your own image:
-
-```yaml
-image: ghcr.io/<your-ghcr-username>/katpool-app:0.65
-```
-
-## Mining Port Configuration
-
-The mining pool supports multiple static difficulty ports, defined in the `config/config.json` file.
-
-### Stratum Difficulty Ports
-
-Each port is mapped to a specific difficulty level. This enables miners to choose a port appropriate for their hardware.
-
-- **Port 8888** supports **variable difficulty**, starting at 2048 and automatically adjusting based on miner performance.
-- Miners can also set a **custom difficulty** on port 8888 using the `password` field during connection. This overrides the assigned difficulty.
-
-**Example usage:**
-password: x d=2048
-
-### Example Port Configuration
+### Example Configuration
 
 ```json
-"ports": {
-  "8888": { "difficulty": 2048 },
-  "1111": { "difficulty": 256 },
-  "2222": { "difficulty": 1024 }
+{
+  "ports": {
+    "8888": { "difficulty": 2048 },
+    "1111": { "difficulty": 256 },
+    "2222": { "difficulty": 1024 }
+  }
 }
 ```
 
-- **Note**: Ports with static difficulty (e.g., 1111, 2222) cannot be overridden via the password field.
+</details>
 
-### Start and check the pool
+## Installation
 
-To start the pool, you need to run below commands
+<details>
+<summary>Docker Compose Installation</summary>
+
+### Container Images
+
+Since this is an open-source project without pre-built images, you must build images locally:
 
 ```bash
-# First time setup - create the network and start kaspad
-docker network create katpool-app_backend
-docker compose -f kaspad-compose.yml up -d
+# Build the main application image
+docker build -t ghcr.io/<your-username>/katpool-app:0.65 .
 
-# Your regular workflow (kaspad is completely separate)
+# Push to your registry
+docker push ghcr.io/<your-username>/katpool-app:0.65
+```
+
+Update `docker-compose.yml` with your image URLs:
+
+```yaml
+image: ghcr.io/<your-username>/katpool-app:0.65
+```
+
+### Starting the Pool
+
+```bash
+# Start all services
 docker compose up -d
+
+# Monitor main application logs
+docker logs -f katpool-app
 ```
 
-You can use `docker logs -f katpool-app` to see the output of your pool instance. We recommned to use DEBUG=1 at the beginning.
-After ten minites you should be able to connect to the metrics, received info fo the state of the treasury and configurations via port 8080 at the following paths
+**Tip:** Use `DEBUG=1` environment variable for detailed logging during initial setup.
 
-- `http://<pool-server>:8080` it would take you to the promtheus interface. Check the `index.ts` file in `src/prometheus` folder for the metrics.
-- `http://<pool-server>:8080/config` to see the initial config of the pool
-- `http://<pool-server>:8080/balance` to see the balance for all miners
-- `http://<pool-server>:8080/total` to see the total been rewarded to the miners ever
+</details>
 
-### Backup
+<details>
+<summary>Local Development Setup</summary>
 
-Optionally, you can add a backup process to the DB. Check the ./backup folder.
-You can build the suggested image via `docker build -t katpool-backup:0.4 .` and uncomment its part in the docker-compose.yml file.
-We recommend to transfer the database dump files to other location as additional protection.
+**Not Recommended for Production**
 
-## Service Account Creation and Credentials for Google Cloud Backup
-
-### Creating project in google cloud console
-
-- Head over and Login to https://console.cloud.google.com/
-- Go to Topbar right beside the Google Cloud logo
-- Create New Project
-- Select your newly created project
-
-### Enabling drive api serivce
-
-- From the navigation menu, select API & services (https://console.cloud.google.com/apis/dashboard)
-- Click on ENABLE APIS AND SERVICES (https://console.cloud.google.com/apis/library)
-- Go to the Google Workspace in sidebar
-- Then click on Google Drive API (https://console.cloud.google.com/apis/library/drive.googleapis.com)
-- Click on Enable button
-
-### Creating the google cloud service account
-
-- Go to (https://console.cloud.google.com/iam-admin/serviceaccounts)
-- Click on CREATE SERVICE ACCOUNT, give the service account name, skip the optional fields
-
-### Creating credentials for the service account
-
-- Go to your newly created service account
-- Go to KEYS tab and click on ADD KEY -> Create new key -> Key type : JSON
-- Your credentials json file will be downloaded
-
-### Running cloud backup script
-
-- Add that json file to backup folder as "google-credentials.json"
-- Configure the email address to access the dump file in config as "backupEmailAddress" Then execute the below commads:
+For local development without Docker:
 
 ```bash
-  cd backup/
-  bun run cloudBackup.ts fileName.sql
-```
-
-## How to install locally using bun (not recommended)
-
-To install dependencies:
-
-```bash
+# Install dependencies
 bun install
-```
 
-## Database Setup
-
-We use **PostgreSQL** as the database for Katpool. The initial schema is provided in the `init.sql` file located in the project repository. You can use this script to initialize your own database instance.
-
-### Running the init.sql script
-
-To create the necessary tables, you can run the following command after setting up PostgreSQL:
-
-```
-psql -U <your-db-user> -d <your-db-name> -f init.sql
-```
-
-Make sure the database and user already exist and have the appropriate privileges.
-
-### Prerequisites Before Running the App
-
-Before starting the application, ensure the following steps are completed:
-
-1. Populate the required environment variables in a `.env` file.
-2. Ensure the WASM SDK is correctly placed in the `wasm` folder (see the [WASM setup section](#download-kaspa-wasm) for more info).
-3. Verify that the following services are up and running:
-   - `kaspad`: Kaspa full node
-   - `katpool-app`: Main application service
-   - `katpool-db`: PostgreSQL database instance
-   - `katpool-db-migrate`: Used to create/alter tables
-   - `katpool-backup`: Periodically dumps DB and uploads to Google Drive
-   - `katpool-monitor`: Exposes Prometheus metrics and serves APIs
-   - `go-app`: Fetches block templates from Kaspa network over gRPC and publishes to Redis
-   - `redis`: Used for inter-service messaging (e.g., block templates)
-   - `katpool-payment`: Distributes miner rewards based on DB balances
-   - `prometheus`: Collects metrics from monitor service
-   - `nginx`: Acts as a reverse proxy and load balancer
-
-### Running the Application
-
-Once everything is set up, start the application using:
-
-```
+# Run the application
 bun run index.ts
 ```
 
-This will launch the main `katpool-app` service. Along with necessary setup.
-
-## Additonal notes
-
-This project was created using `bun init` in bun v1.0.31. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
-Special thanks to [KaffinPX](https://github.com/KaffinPX) for providing the foundation of this project.
-
-# App Components Description
+**Requirements:**
+- All environment variables configured
+- WASM SDK in `wasm/` folder
+- All dependent services running
 
-### The Mining Cycle: Step-by-Step
+</details>
 
-1. **Starting the Server**:
-   - The Stratum server starts and begins listening for connections from miners.
-   - The server connects to the Kaspa network via the RPC client. It fetches block templates from Redis channel.
+## Database Setup
 
-2. **Fetching Block Templates**:
-   - We have used [go-app](https://github.com/Nacho-the-Kat/katpool-blocktemplate-fetcher): to fetch new block template from the Kaspa network using _gRPC_ connection and sends them over Redis channel.
-   - Katpool-app fetches block templates from Redis channel.
-   - It creates a PoW object from the template to help miners validate their work.
-   - The block template and PoW object are stored in the `templates` map.
+<details>
+<summary>PostgreSQL Database</summary>
 
-3. **Distributing Jobs to Miners**:
-   - A job is created from the block template, encoding the necessary data.
-   - The job is sent to all connected miners, instructing them on what work to perform.
+The pool uses PostgreSQL with the schema defined in `init.sql`.
 
-4. **Miners Start Working**:
-   - Each miner starts working on the job by trying to find a valid nonce.
-   - A valid nonce, when combined with the block template and hashed, must meet the difficulty target.
+#### Database Initialization
 
-5. **Submitting Shares**:
-   - When a miner finds a nonce, they submit a share back to the server.
-   - The server checks if the share is valid:
-     - It retrieves the PoW object from the `templates` map.
-     - It validates the nonce against the difficulty target.
-6. **Accepting or Rejecting Shares**:
-   - **Valid Share**: If the nonce is valid and meets the target, the server:
-     - Adds the share to the `works` map for tracking.
-     - If the share completes a valid block, it submits the block to the Kaspa network.
-     - Notifies the miner of the successful submission.
-   - **Invalid Share**: If the nonce is invalid or duplicated:
-     - The share is rejected.
-     - The miner is notified of the rejection.
+```bash
+# Initialize database with schema
+psql -U <your-db-user> -d <your-db-name> -f init.sql
+```
 
-7. **Handling New Templates**:
-   - As new block templates are created (typically when a new block is added to the blockchain), the server fetches the new templates.
-   - The server sends the new job to all miners, starting the cycle again.
+**Prerequisites:**
+- PostgreSQL database and user must exist
+- User must have appropriate privileges
 
-### Example Cycle
+### Service Dependencies
 
-1. **Server Starts**: The server starts and listens for miners.
-2. **Fetch Template**:  
-   Block templates are fetched from the Kaspa network by the `go-app` service using a gRPC connection.  
-   These templates are then published to a Redis channel, which is subscribed to by the `katpool-app` service.
-3. **Create Job**: The server creates a job from the template.
-4. **Distribute Job**: The job is sent to miners.
-5. **Miners Work**: Miners start finding a valid nonce.
-6. **Submit Share**: A miner submits a share.
-7. **Validate Share**:
-   - **If Valid**:
-     - The share is added to `works`.
-     - If it's a valid block, it's submitted to Kaspa.
-     - Miner is notified of success.
-   - **If Invalid**:
-     - The share is rejected.
-     - Miner is notified of rejection.
-8. **New Template**: A new block is added to the blockchain.
-9. **Fetch New Template**: The server fetches a new block template, and the cycle repeats.
+Ensure all services are running before starting the application:
 
-### Summary
+✅ **Core Services:**
+- `kaspad` - Kaspa full node
+- `katpool-db` - PostgreSQL database
+- `redis` - Message broker
 
-The Stratum app manages the entire lifecycle of mining jobs, from distributing tasks to miners, validating their work, and submitting completed blocks to the Kaspa network. This ensures a smooth and efficient mining operation, with miners continuously working on up-to-date templates and the pool efficiently handling their contributions.
+✅ **Application Services:**
+- `katpool-app` - Main application
+- `go-app` - Block template fetcher
+- `katpool-payment` - Payment processor
 
-## Stratum
+✅ **Supporting Services:**
+- `katpool-monitor` - Metrics and APIs
+- `prometheus` - Monitoring
+- `nginx` - Reverse proxy
 
-This TypeScript code defines a Stratum class that handles the stratum protocol for a Kaspa mining pool. Stratum is a communication protocol for mining pools, which allows miners to connect to the pool and submit their work. The Stratum class extends EventEmitter to handle various events and includes methods for managing miner connections, contributions, and communication with the mining pool server.
+</details>
 
-### Detailed Breakdown
+## Monitoring and APIs
 
-#### Imports
+<details>
+<summary>Available Endpoints</summary>
 
-- **`Socket`**: Represents a network socket used for communication.
-- **`EventEmitter`**: Base class for creating event-driven applications.
-- **`randomBytes`**: Used to generate random bytes, typically for extra nonces.
-- **`Server`**, **`Miner`**, **`Worker`**: Import server-related entities.
-- **`Request`**, **`Response`**, **`Event`**, **`errors`**: Protocol definitions for requests, responses, and errors.
-- **`Templates`**: Manages job templates. Listens to job templates over Redis channel and the processes them.
-- **`calculateTarget`**, **`Address`**: Utilities for target calculation and address validation.
-- **`Encoding`**, **`encodeJob`**: Job encoding utilities.
+After 10 minutes of operation, the following endpoints will be available:
 
-#### Class `Stratum`
+| Endpoint | Description |
+|----------|-------------|
+| `http://<pool-server>:8080` | Prometheus metrics interface |
+| `http://<pool-server>:8080/config` | Pool configuration |
+| `http://<pool-server>:8080/balance` | Miner balances |
+| `http://<pool-server>:8080/total` | Total rewards distributed |
 
-##### Properties
+</details>
 
-- **`server`**: An instance of the `Server` class, handling the mining pool server.
-- **`templates`**: Manages job templates. Listens to job templates over Redis channel and the processes them.
-- **`contributions`**: Tracks contributions from miners.
-- **`subscriptors`**: Keeps track of subscribed miners' sockets.
-- **`miners`**: Maps miner addresses to their associated sockets.
+## Backup Configuration
 
-##### Constructor
+<details>
+<summary>Database Backup Setup</summary>
 
-- **`templates`**: Templates manager. Listens to job templates over Redis channel and the processes them.
-- **`initialDifficulty`**: Initial mining difficulty.
+Optional database backup service can be enabled by:
 
-- **`poolAddress`**: The wallet address to receive mined block rewards.
+1. Building the backup image:
+   ```bash
+   docker build -t katpool-backup:0.4 ./backup
+   ```
 
-- **`sharesPerMin`**: Target number of shares expected per miner per minute, used for variable difficulty adjustments.
+**Important:** Transfer database dumps to external storage for additional protection.
 
-- **`clampPow2`**: Whether to clamp difficulty adjustments to the nearest power of 2.
+</details>
 
-- **`varDiff`**: Enables or disables variable difficulty. When enabled, the difficulty adjusts based on miner performance.
+<details>
+<summary>Google Cloud Backup Setup</summary>
 
-- **`extraNonce`**:
-  - Size in bytes of extranonce, from 0 (no extranonce) to 3.
-  - More bytes allow for more clients with unique nonce-spaces.
-  - 1 byte = 256 clients, 2 bytes = 65536, 3 bytes = 16777216.
+<details>
+<summary>Creating project in google cloud console</summary>
 
-- **`stratumMinDiff`**: The minimum difficulty assigned on the Stratum port.
+1. Login to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project from the top bar
+3. Select your newly created project
 
-- **`stratumMaxDiff`**: Sets up the server, templates, and registers template announcements.
+</details>
 
-##### Methods
+<details>
+<summary>Enabling drive api service</summary>
 
-- **`dumpContributions()`**:
-  - Clears and returns the current contributions.
+1. Navigate to [API & Services Dashboard](https://console.cloud.google.com/apis/dashboard)
+2. Click "ENABLE APIS AND SERVICES"
+3. Go to Google Workspace section
+4. Enable Google Drive API
+5. Click "Enable"
 
-- **`addShare(address: string, hash: string, difficulty: number, nonce: bigint)`**:
-  - Checks for duplicate shares.
-  - Validates the work against the target difficulty.
-  - Submits the valid block to the templates.
-  - Adds the contribution to the map.
+</details>
 
-- **`announceTemplate(id: string, hash: string, timestamp: bigint)`**:
-  - Encodes the job and sends it to all subscribed miners.
+<details>
+<summary>Creating the google cloud service account</summary>
 
-- **`reflectDifficulty(socket: Socket<Miner>)`**:
-  - Sends the current mining difficulty to a miner.
+1. Go to [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Click "CREATE SERVICE ACCOUNT"
+3. Provide service account name
+4. Skip optional fields
 
-- **`onMessage(socket: Socket<Miner>, request: Request)`**:
-  - Handles various stratum protocol messages (`mining.subscribe`, `mining.authorize`, `mining.submit`).
-  - Manages subscriptions, authorizations, and share submissions.
+</details>
 
-#### `onMessage` Method
+<details>
+<summary>Creating credentials for the service account</summary>
 
-- **`mining.subscribe`**:
-  - Adds the socket to the subscribers set and emits a subscription event.
+1. Select your service account
+2. Go to "KEYS" tab
+3. Click "ADD KEY" → "Create new key"
+4. Select "JSON" key type
+5. Download the credentials file
 
-- **`mining.authorize`**:
-  - Validates the address and manages worker registration.
-  - Sets the extra nonce and sends difficulty information.
+</details>
 
-- **`mining.submit`**:
-  - Validates and processes submitted shares.
-  - Handles errors and sends appropriate responses.
+<details>
+<summary>Locally running cloud backup script</summary>
 
-## Stratum server
+1. Place the JSON file in `backup/` as `google-credentials.json`
+2. Configure `backupEmailAddress` in config
+3. Run the backup script:
+   ```bash
+   cd backup/
+   bun run cloudBackup.ts fileName.sql
+   ```
 
-This code defines a Server class that sets up and manages TCP socket connections for a stratum server, which is a part of a mining pool infrastructure. It listens for incoming connections, handles incoming data, and processes messages according to the stratum protocol.
+</details>
 
-### Detailed Breakdown
+</details>
 
-#### Constructor
+## System Architecture
 
-- **Parameters**: `port`, `difficulty`, `onMessage`, `sharesManager`.
-- **Function**:
-  - Sets the initial difficulty.
-  - Binds the `onMessage` callback.
-  - Configures the TCP socket listener to handle connections on the specified port.
+<details>
+<summary>Mining Cycle Overview</summary>
 
-#### `onConnect(socket: Socket<Miner>)`
+1. **Server Initialization**
+   - Stratum server starts and listens for miner connections
+   - RPC client connects to Kaspa network
+   - Block templates fetched from Redis channel
 
-- **Purpose**: Initializes the `data` property of the socket with default miner settings.
-- **Function**:
-  - Sets the initial difficulty, an empty map for workers, the default encoding, and an empty string for cached bytes.
+2. **Template Management**
+   - Go-app fetches templates via gRPC
+   - Templates published to Redis channel
+   - Katpool-app subscribes and processes templates
+   - PoW objects created and stored
 
-#### `onData(socket: Socket<Miner>, data: Buffer)`
+3. **Job Distribution**
+   - Jobs created from block templates
+   - Jobs distributed to all connected miners
+   - Miners begin nonce calculations
 
-- **Purpose**: Processes incoming data, splits it into messages, and handles each message.
-- **Function**:
-  - Appends incoming data to `cachedBytes`.
-  - Splits the concatenated string by newline characters to separate messages.
-  - Processes each complete message:
-    - Parses the message.
-    - Invokes the `onMessage` callback with the parsed message.
-    - Sends the response back to the miner.
-  - Updates `cachedBytes` with any remaining partial message.
-  - Ends the connection if `cachedBytes` exceeds 512 characters to prevent potential overflow issues.
+4. **Share Processing**
+   - Miners submit shares with found nonces
+   - Server validates shares against difficulty targets
+   - Valid shares tracked and recorded
+   - Completed blocks submitted to Kaspa network
 
-This class effectively manages the lifecycle of miner connections, from establishing a connection, receiving and processing data, to responding to requests and handling errors.
+5. **Reward Distribution**
+   - Contributions calculated based on valid shares
+   - Rewards distributed proportionally
+   - Balances updated in database
 
-## Stratum templates
+</details>
 
-This TypeScript code defines a Templates class responsible for managing mining job templates for a Kaspa mining pool. The class subscribes to a Redis channel to retrieve new block templates and processes them, manage proof-of-work (PoW) computations, and handle job submissions.
+<details>
+<summary>Stratum Server</summary>
 
-### Key Components
+The Stratum class manages the stratum protocol implementation:
 
-1. **Imports**:
-   - `IBlock`, `RpcClient`, `Header`, `PoW`: Types and classes from the Kaspa WebAssembly module.
-   - `Jobs`: A class handling job-related operations.
+**Key Features:**
+- Handles miner connections and subscriptions
+- Manages contribution tracking
+- Processes share submissions
+- Implements variable difficulty adjustments
 
-2. **Templates Class**:
-   - Manages block templates received over Redis channel and proof-of-work data.
-   - Subscribed to Redis channel to receive and process block templates.
-   - Interacts with the Kaspa RPC client to submit completed work.
+**Core Methods:**
+- `addShare()` - Validates and processes submitted shares
+- `announceTemplate()` - Distributes new jobs to miners
+- `onMessage()` - Handles stratum protocol messages
 
-### Class Properties
+</details>
 
-- **`rpc`**: An instance of `RpcClient` to communicate with the Kaspa node.
-- **`address`**: The mining pool's payout address.
-- **`templates`**: A map storing block templates and their corresponding PoW data.
-- **`jobs`**: An instance of the `Jobs` class to manage job-related operations.
-- **`cacheSize`**: The maximum number of templates to cache.
+<details>
+<summary>Templates Manager</summary>
 
-### Constructor
+The Templates class manages block template lifecycle:
 
-- **Parameters**: `rpc`, `address`, `cacheSize`.
-- **Function**: Initializes the `rpc` client, payout address, cache size, and sets up the `templates` and `jobs`.
+**Responsibilities:**
+- Subscribes to Redis channel for new templates
+- Manages template cache with configurable size
+- Creates PoW objects for mining validation
+- Submits completed blocks to Kaspa network
 
-### Methods
+**Key Methods:**
+- `getHash()` - Retrieves hash for job ID
+- `getPoW()` - Gets PoW object for validation
+- `submit()` - Submits completed blocks
+- `register()` - Registers template callback handlers
 
-#### `getHash(id: string)`
+</details>
 
-- **Purpose**: Retrieves the hash for a given job ID.
-- **Function**: Delegates to the `jobs` instance to get the hash.
+<details>
+<summary>Pool Manager</summary>
 
-#### `getPoW(hash: string)`
+The Pool class coordinates all pool components:
 
-- **Purpose**: Retrieves the PoW object for a given block hash.
-- **Function**: Looks up the PoW object in the `templates` map.
+**Functions:**
+- Manages treasury and stratum interactions
+- Handles database operations
+- Implements monitoring and logging
+- Coordinates reward allocation
 
-#### `submit(hash: string, nonce: bigint)`
+**Core Operations:**
+- `allocate()` - Distributes rewards based on contributions
+- Event handling for subscriptions and coinbase transactions
+- Database integration for balance management
 
-- **Purpose**: Submits a completed block to the Kaspa node.
-- **Function**:
-  - Retrieves the block template and header for the given hash.
-  - Sets the nonce and finalizes the header.
-  - Updates the block template with the new hash.
-  - Submits the block via the RPC client.
-  - Deletes the template from the cache.
+</details>
 
-#### `register(callback: (id: string, hash: string, timestamp: bigint) => void)`
+## Developer Notes
 
-- **Purpose**: Registers a callback to handle new block templates.
-- **Function**:
-  - Adds an event listener for new block templates from the RPC client.
-  - Retrieves and processes the new block template.
-  - Creates a PoW object for the template.
-  - Adds the template and PoW to the `templates` map.
-  - Derives a job ID and invokes the callback.
-  - Ensures the cache does not exceed the specified size.
-  - Subscribes to new block template events via the RPC client.
+<details>
+<summary>Development Tips</summary>
 
-### Usage
+### Git Configuration
 
-This `Templates` class is integral to managing the lifecycle of mining job templates in the pool. It handles:
-
-- Retrieving new block templates over the Redis channel and processes them.
-- Managing the cache of templates and corresponding PoW data.
-- Submitting completed blocks back to the node.
-- Notifying the mining pool of new job templates.
-
-By efficiently managing these tasks, the `Templates` class ensures that miners always have up-to-date job templates to work on, and completed work is promptly submitted to the Kaspa network.
-
-## Pool
-
-The `Pool` class is designed to manage the interactions between the mining pool's components, such as treasury, stratum, database, and monitoring systems. Here's a breakdown of its components and methods:
-
-### Imports
-
-- **`Treasury`** and **`Stratum`**: Type imports for interacting with the pool's treasury and stratum components.
-- **`Database`**: Handles database operations.
-- **`Monitoring`**: Manages logging and monitoring of pool activities.
-- **`sompiToKaspaStringWithSuffix`**
-
-### Class `Pool`
-
-#### Properties
-
-- **`treasury`**: Instance of the `Treasury` class, managing the pool's funds.
-- **`stratum`**: Instance of the `Stratum` class, handling miner connections and contributions.
-- **`database`**: Instance of the `Database` class, managing miner balances.
-- **`monitoring`**: Instance of the `Monitoring` class, logging pool activities.
-
-#### Constructor
-
-- **Parameters**: `treasury`, `stratum`
-- **Function**:
-  - Initializes the `treasury`, `stratum`, `database`, and `monitoring` properties.
-  - Sets up event listeners for miner subscriptions (`subscription`), coinbase transactions (`coinbase`).
-
-#### Methods
-
-1. **`allocate(amount: bigint)`**:
-   - **Purpose**: Allocates rewards to miners based on their contributions (similar to `distribute` but without resetting balances).
-   - **Process**:
-     - Collects contributions from the `stratum`.
-     - Calculates the total work done by miners.
-     - Logs the allocation event.
-     - Allocates the rewards proportionally based on the miners' contributions.
-
-## Developer Tips
-
-> 💡 **Tip:** To avoid seeing formatting commits (such as Prettier changes) in `git blame`, run:
+To ignore formatting commits in git blame:
 
 ```bash
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
+
+### Project Information
+
+- **Runtime:** Bun v1.0.31
+- **Base Project:** Created with `bun init`
+
+</details>
+
+<br>
+
+**Foundation:** Special thanks to [KaffinPX](https://github.com/KaffinPX)
+
+---
+
+For additional support and documentation, please refer to the project's GitHub repository and associated service repositories.
