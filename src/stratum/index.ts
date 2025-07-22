@@ -86,8 +86,8 @@ export default class Stratum extends EventEmitter {
         .then(() => {
           this.monitoring.log(`Stratum ${this.port}: VarDiff thread started successfully.`);
         })
-        .catch(err => {
-          this.monitoring.error(`Stratum ${this.port}: Failed to start VarDiff thread: ${err}`);
+        .catch(error => {
+          this.monitoring.error(`Stratum ${this.port}: Failed to start VarDiff thread: `, error);
         });
     }
 
@@ -124,8 +124,8 @@ export default class Stratum extends EventEmitter {
         // try {
         //   socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
         //   socket.end();
-        // } catch (err) {
-        //   this.monitoring.error(`Stratum ${this.port}: Error deleting socket: ${err}`);
+        // } catch (error) {
+        //   this.monitoring.error(`Stratum ${this.port}: Error deleting socket: `, error);
         // }
       } else {
         socket.data.workers.forEach((worker, _) => {
@@ -479,7 +479,7 @@ export default class Stratum extends EventEmitter {
                 this.templates,
                 request.params[1]
               );
-            } catch (err: any) {
+            } catch (error: any) {
               // Log share processing error
               logger.error('Share processing error', {
                 port: this.port,
@@ -487,11 +487,11 @@ export default class Stratum extends EventEmitter {
                 workerName: name,
                 jobId: request.params[1],
                 nonce: request.params[2],
-                error: err instanceof Error ? err.message : String(err),
+                error: error instanceof Error ? error.message : String(error),
               });
 
-              if (!(err instanceof Error)) throw err;
-              switch (err.message) {
+              if (!(error instanceof Error)) throw error;
+              switch (error.message) {
                 case 'Duplicate share':
                   this.monitoring.debug(`Stratum ${this.port}: DUPLICATE_SHARE`);
                   response.error = new StratumError('duplicate-share').toDump();
@@ -511,9 +511,9 @@ export default class Stratum extends EventEmitter {
                     workerName: name,
                     jobId: request.params[1],
                     nonce: request.params[2],
-                    error: err.toString(),
+                    error: error.toString(),
                   });
-                  throw err;
+                  throw error;
               }
               response.result = false;
             }

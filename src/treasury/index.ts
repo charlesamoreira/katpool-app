@@ -39,13 +39,13 @@ export default class Treasury extends EventEmitter {
     try {
       this.rpc.subscribeBlockAdded();
     } catch (error) {
-      this.monitoring.error(`Treasury: SUBSCRIBE ERROR: ${error}`);
+      this.monitoring.error(`Treasury: SUBSCRIBE ERROR: `, error);
     }
     try {
       this.listenToBlocks();
       this.startWatchdog();
     } catch (error) {
-      this.monitoring.error(`Treasury: LISTEN ERROR: ${error}`);
+      this.monitoring.error(`Treasury: LISTEN ERROR: `, error);
     }
   }
 
@@ -82,7 +82,7 @@ export default class Treasury extends EventEmitter {
         this.monitoring.debug(`Treasury: Duplicate block ${reward_block_hash} ignored`);
       }
     } catch (error) {
-      this.monitoring.error(`Treasury: Error in block-added handler: ${error}`);
+      this.monitoring.error(`Treasury: Error in block-added handler: `, error);
     }
   };
 
@@ -119,7 +119,7 @@ export default class Treasury extends EventEmitter {
             try {
               await this.processBlockData(data);
             } catch (error) {
-              this.monitoring.error(`Treasury: Error in parallel handler - ${error}`);
+              this.monitoring.error(`Treasury: Error in parallel handler - `, error);
             } finally {
               activeJobs--;
             }
@@ -142,7 +142,7 @@ export default class Treasury extends EventEmitter {
       await this.listenToBlocks();
       this.startWatchdog();
     } catch (error) {
-      this.monitoring.error(`Treasury: Error during reconnectBlockListener: ${error}`);
+      this.monitoring.error(`Treasury: Error during reconnectBlockListener: `, error);
       setTimeout(() => this.reconnectBlockListener(), 5000); // Retry after 5 seconds
     } finally {
       this.reconnecting = false;
@@ -174,7 +174,7 @@ export default class Treasury extends EventEmitter {
             }
             break txLoop;
           } catch (error) {
-            this.monitoring.error(`Treasury: Adding reward details -${error}`);
+            this.monitoring.error(`Treasury: Adding reward details - `, error);
             break txLoop;
           }
         }

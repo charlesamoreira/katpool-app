@@ -34,7 +34,7 @@ export default class Database {
         [reward_block_hash, reward_txn_id]
       );
     } catch (error) {
-      monitoring.error(`database: addRewardDetails - ${JsonBig.stringify(error)}`);
+      monitoring.error(`database: addRewardDetails - `, JsonBig.stringify(error));
     } finally {
       client.release();
     }
@@ -58,11 +58,11 @@ export default class Database {
       }
       return result.rows[0].reward_block_hash;
     } catch (error) {
-      monitoring.error(`database: getRewardBlockHash - ${error}`);
+      monitoring.error(`database: getRewardBlockHash - `, error);
 
       // Optional: handle duplicate entry
       const err = error as { code?: string; message?: string }; // Now 'error' is explicitly defined
-      monitoring.error(`database: addRewardDetails - ${JsonBig.stringify(error)}`);
+      monitoring.error(`database: addRewardDetails - `, JsonBig.stringify(error));
 
       if (err?.code === '23505') {
         monitoring.debug(`database: Reward entry already exists for txn: ${reward_txn_id}`);
@@ -113,9 +113,9 @@ export default class Database {
 
       await client.query('COMMIT');
       return true;
-    } catch (e) {
+    } catch (error) {
       await client.query('ROLLBACK');
-      throw e;
+      throw error;
     } finally {
       client.release();
     }
@@ -180,9 +180,9 @@ export default class Database {
 
       await client.query('COMMIT');
       return true;
-    } catch (e) {
+    } catch (error) {
       await client.query('ROLLBACK');
-      throw e;
+      throw error;
     } finally {
       client.release();
     }

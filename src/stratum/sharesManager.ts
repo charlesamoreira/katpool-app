@@ -361,7 +361,8 @@ export class SharesManager {
             }
           } catch (error) {
             this.monitoring.error(
-              `SharesManager ${this.port}: Could not delete inactive worker: ${workerName}, address: ${address}`
+              `SharesManager ${this.port}: Could not delete inactive worker: ${workerName}, address: ${address} - `,
+              error
             );
           }
         });

@@ -20,11 +20,11 @@ axiosRetry(axios, {
   retryCondition(error) {
     // Ensure error.response exists before accessing status
     if (!error.response) {
-      monitoring.error(`No response received: ${error.message}`);
+      monitoring.error(`Pool: axiosRetry - No response received: ${error.message}`);
       return false; // Do not retry if no response (e.g., network failure)
     }
 
-    const retryableStatusCodes = [404, 422, 429, 500, 501];
+    const retryableStatusCodes = [404, 422, 429, 500, 501, 503];
     return retryableStatusCodes.includes(error.response.status);
   },
 });
@@ -194,7 +194,7 @@ export default class Pool {
 
   handleError(error: unknown, context: string) {
     if (error instanceof AxiosError) {
-      this.monitoring.error(`Pool: API call failed - ${error.message}.`);
+      this.monitoring.error(`Pool: API call failed - `, error);
       this.monitoring.error(`Pool: ${context}`);
       if (error.response) {
         this.monitoring.error(`Pool: Response status: ${error.response.status}`);
@@ -203,7 +203,7 @@ export default class Pool {
       }
       return { reward_block_hash: '', block_hash: 'block_hash_placeholder', daaScoreF: '0' };
     } else {
-      this.monitoring.error(`Pool: Unexpected error: ${error}`);
+      this.monitoring.error(`Pool: Unexpected error: `, error);
     }
   }
 
