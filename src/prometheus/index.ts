@@ -5,6 +5,7 @@ import express from 'express';
 import client from 'prom-client';
 import { poolStartTime } from '../..';
 import { getServerStatus, serverUptime } from '../shared/heartbeat';
+import JsonBig from 'json-bigint';
 
 const queue = new PQueue({ concurrency: 1 });
 const monitoring = new Monitoring();
@@ -100,7 +101,7 @@ export function startMetricsServer() {
       .filter(([_, status]) => status === 'active')
       .map(([port]) => port);
 
-    monitoring.log(`Prometheus: [Heartbeat] Bun server states: ${JSON.stringify(statuses)}`);
+    monitoring.log(`Prometheus: [Heartbeat] Bun server states: ${JsonBig.stringify(statuses)}`);
 
     const status = hasDead ? 'unhealthy' : 'ok';
     const statusCode = hasDead ? 503 : 200;
