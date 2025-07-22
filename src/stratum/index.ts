@@ -28,6 +28,8 @@ export enum AsicType {
   Unknown = '',
 }
 
+export type AsicTypeorCustom = AsicType | string;
+
 const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;
 const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
@@ -266,6 +268,8 @@ export default class Stratum extends EventEmitter {
             socket.data.asicType = AsicType.IceRiver;
           } else if (goldShellRegex.test(minerType)) {
             socket.data.asicType = AsicType.GoldShell;
+          } else {
+            socket.data.asicType = request.params[0] || AsicType.Unknown;
           }
           this.subscriptors.add(socket);
           this.emit('subscription', socket.remoteAddress, request.params[0]);

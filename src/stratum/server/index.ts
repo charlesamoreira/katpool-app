@@ -2,7 +2,7 @@ import type { Socket, TCPSocketListener } from 'bun';
 import { parseMessage, StratumError, type Request, type Response } from './protocol';
 import { Encoding } from '../templates/jobs/encoding';
 import Monitoring from '../../monitoring';
-import { AsicType } from '..';
+import { AsicType, type AsicTypeorCustom } from '..';
 import type { SharesManager } from '../sharesManager';
 import { markServerUp, updateMinerActivity } from '../../shared/heartbeat';
 import logger from '../../monitoring/datadog';
@@ -18,7 +18,7 @@ export type Miner = {
   extraNonce: string;
   workers: Map<string, Worker>;
   encoding: Encoding;
-  asicType: AsicType;
+  asicType: AsicTypeorCustom;
   cachedBytes: string;
   connectedAt: number;
   port: number;

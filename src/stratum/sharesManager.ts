@@ -14,7 +14,7 @@ import {
 } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
-import { AsicType } from '.';
+import { AsicType, type AsicTypeorCustom } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
@@ -36,7 +36,7 @@ export interface WorkerStats {
   minDiff: number;
   recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
   hashrate: number;
-  asicType: AsicType;
+  asicType: AsicTypeorCustom;
   varDiffEnabled: boolean;
 }
 
