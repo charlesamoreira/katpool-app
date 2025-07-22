@@ -18,6 +18,7 @@ import { AsicType, type AsicTypeorCustom } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
+import JsonBig from 'json-bigint';
 
 export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
 
@@ -790,7 +791,7 @@ export class SharesManager {
   logData(minerData: MinerData) {
     minerData.workerStats.forEach((stats, workerName) => {
       this.monitoring.log(
-        `SharesManager ${this.port}: stats: ${JSON.stringify(stats)}, name: ${workerName}`
+        `SharesManager ${this.port}: stats: ${JsonBig.stringify(stats)}, name: ${workerName}`
       );
     });
   }
