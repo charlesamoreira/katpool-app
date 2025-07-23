@@ -39,7 +39,7 @@ export default class Templates {
       // Ensure existing connection is closed
       if (this.subscriber) {
         try {
-          await this.subscriber.quit(); // or .disconnect() if you're using redis@4
+          await this.subscriber.quit();
           this.monitoring.error('Templates: Closed existing Redis connection before reconnecting');
         } catch (error) {
           this.monitoring.error(`Templates: Error closing Redis connection: `, error);
