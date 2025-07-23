@@ -9,6 +9,7 @@ import axios, { AxiosError } from 'axios';
 import config from '../../config/config.json';
 import axiosRetry from 'axios-retry';
 import JsonBig from 'json-bigint';
+import logger from '../monitoring/datadog';
 
 const monitoring = new Monitoring();
 
@@ -140,6 +141,9 @@ export default class Pool {
         stratum.sharesManager.getDifficultyAndTimeSinceLastAllocation()
       );
       this.monitoring.debug(
+        `Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`
+      );
+      logger.warn(
         `Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`
       );
     }
