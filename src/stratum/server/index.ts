@@ -117,7 +117,7 @@ export default class Server {
       workers: new Map(),
       encoding: Encoding.BigHeader,
       cachedBytes: '',
-      asicType: AsicType.Unknown,
+      asicType: '',
       connectedAt: Date.now(),
       port: this.port,
     };

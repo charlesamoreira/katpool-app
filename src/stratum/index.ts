@@ -173,19 +173,13 @@ export default class Stratum extends EventEmitter {
           }
           if (minerRegexes.bitMain.test(minerType)) {
             socket.data.encoding = Encoding.Bitmain;
-            socket.data.asicType = AsicType.Bitmain;
             response.result = [
               null,
               socket.data.extraNonce,
               8 - Math.floor(socket.data.extraNonce.length / 2),
             ];
-          } else if (minerRegexes.iceRiver.test(minerType)) {
-            socket.data.asicType = AsicType.IceRiver;
-          } else if (minerRegexes.goldShell.test(minerType)) {
-            socket.data.asicType = AsicType.GoldShell;
-          } else {
-            socket.data.asicType = request.params[0] || AsicType.Unknown;
           }
+          socket.data.asicType = request.params[0] || '';
           this.subscriptors.add(socket);
           this.emit('subscription', socket.remoteAddress, request.params[0]);
           this.monitoring.log(
@@ -196,7 +190,6 @@ export default class Stratum extends EventEmitter {
           logger.info('Miner subscribed', {
             port: this.port,
             remoteAddress: socket.remoteAddress,
-            minerType: request.params[0] || 'unknown',
             asicType: socket.data.asicType,
             extraNonce: socket.data.extraNonce || '',
             protocolVersion: request.params[1] || 'unknown',

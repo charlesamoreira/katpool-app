@@ -200,7 +200,11 @@ image: ghcr.io/<your-username>/katpool-app:0.65
 ### Starting the Pool
 
 ```bash
-# Start all services
+# First time setup - create the network and start kaspad
+docker network create katpool-app_backend
+docker compose -f kaspad-compose.yml up -d
+
+# Your regular workflow (kaspad is completely separate)
 docker compose up -d
 
 # Monitor main application logs
