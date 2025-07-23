@@ -1,23 +1,15 @@
-import type { Socket } from 'bun';
 import { calculateTarget } from '../../wasm/kaspa';
-import { stringifyHashrate, getAverageHashrateGHs, debugHashrateCalculation } from './utils';
 import Monitoring from '../monitoring';
-import {
-  minerAddedShares,
-  minerInvalidShares,
-  minerDuplicatedShares,
-  workerHashRateGauge,
-  activeMinerGuage,
-} from '../prometheus';
+import { minerAddedShares, minerInvalidShares, minerDuplicatedShares } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
-import { AsicType, type Contribution, type MinerData, type WorkerStats } from '../types';
-import JsonBig from 'json-bigint';
+import type { Contribution, MinerData, WorkerStats } from '../types';
 import { DEBUG, WINDOW_SIZE } from '../constants';
 import { VariableDifficulty } from './variableDifficulty';
+import { Stats } from './stats';
 
 export class SharesManager {
   public miners: Map<string, MinerData> = new Map();
@@ -26,9 +18,9 @@ export class SharesManager {
   private lastAllocationTime: number;
   private lastAllocationDaaScore: bigint;
   private stratumMinDiff: number;
-  private stratumInitDiff: number;
   public port: number;
   public varDiff: VariableDifficulty;
+  public stats: Stats;
 
   constructor(
     stratumInitDiff: number,
@@ -38,49 +30,13 @@ export class SharesManager {
   ) {
     this.stratumMinDiff = stratumMinDiff;
     this.monitoring = new Monitoring();
-    this.startStatsThread(); // Start the stats logging thread
+    this.stats = new Stats(this, stratumInitDiff);
+    this.stats.startStatsThread(); // Start the stats logging thread
     this.shareWindow = new Denque();
     this.lastAllocationTime = Date.now();
     this.lastAllocationDaaScore = 0n;
-    this.stratumInitDiff = stratumInitDiff;
     this.port = port;
     this.varDiff = new VariableDifficulty(this, stratumMinDiff, stratumMaxDiff);
-  }
-
-  getOrCreateWorkerStats(workerName: string, minerData: MinerData): WorkerStats {
-    if (!minerData.workerStats.has(workerName)) {
-      let varDiffStatus = false;
-      if (this.port === 8888) {
-        varDiffStatus = true;
-        this.monitoring.debug(
-          `SharesManager ${this.port}: New worker stats created for ${workerName}, defaulting to enabled var-diff due to connection to the port 8888.`
-        );
-      }
-      const workerStats: WorkerStats = {
-        blocksFound: 0,
-        sharesFound: 0,
-        sharesDiff: 0,
-        staleShares: 0,
-        invalidShares: 0,
-        workerName,
-        startTime: Date.now(),
-        lastShare: Date.now(),
-        varDiffStartTime: Date.now(),
-        varDiffSharesFound: 0,
-        varDiffWindow: 0,
-        minDiff: this.stratumInitDiff, // Initial difficulty
-        recentShares: new Denque<{ timestamp: number; difficulty: number; nonce: bigint }>(),
-        hashrate: 0,
-        asicType: AsicType.Unknown,
-        varDiffEnabled: varDiffStatus,
-      };
-      minerData.workerStats.set(workerName, workerStats);
-      if (DEBUG)
-        this.monitoring.debug(
-          `SharesManager ${this.port}: Created new worker stats for ${workerName}`
-        );
-    }
-    return minerData.workerStats.get(workerName)!;
   }
 
   async addShare(
@@ -101,7 +57,7 @@ export class SharesManager {
       this.miners.set(address, minerData);
     }
 
-    const workerStats = this.getOrCreateWorkerStats(minerId, minerData);
+    const workerStats = this.stats.getOrCreateWorkerStats(minerId, minerData);
     // Critical Section: Check and Add Share
     for (let i = 0; i < workerStats.recentShares.size(); i++) {
       const share = workerStats.recentShares.get(i);
@@ -234,131 +190,6 @@ export class SharesManager {
     }
   }
 
-  startStatsThread() {
-    const start = Date.now();
-    setInterval(() => {
-      let str =
-        '\n===============================================================================\n';
-      str += '  worker name   |  avg hashrate  |   acc/stl/inv  |    blocks    |    uptime   \n';
-      str += '-------------------------------------------------------------------------------\n';
-
-      const lines: string[] = [];
-      let totalRate = 0;
-
-      this.miners.forEach((minerData, address) => {
-        let rate = 0;
-        minerData.workerStats.forEach((stats, workerName) => {
-          // Update active status metrics
-          let workerRate = 0;
-          const status = this.checkWorkerStatus(stats);
-          metrics.updateGaugeValue(
-            activeMinerGuage,
-            [workerName, address, stats.asicType, this.port.toString()],
-            status
-          );
-          if (status) {
-            workerRate = getAverageHashrateGHs(stats, address);
-            debugHashrateCalculation(stats, address, workerRate);
-          } else {
-            logger.warn(
-              `SharesManager ${this.port}: Worker ${address}.${workerName} is inactive, setting hashrate to 0`
-            );
-            workerRate = 0;
-          }
-          rate += workerRate;
-
-          // Update hashrate - in metrics and workerStats
-          stats.hashrate = workerRate;
-          metrics.updateGaugeValue(workerHashRateGauge, [workerName, address], workerRate);
-
-          const rateStr = stringifyHashrate(workerRate);
-          const ratioStr = `${stats.sharesFound}/${stats.staleShares}/${stats.invalidShares}`;
-          const uptime = (Date.now() - stats.startTime) / 1000;
-
-          lines.push(
-            ` ${stats.workerName.padEnd(15)}| ${rateStr.padEnd(14)} | ${ratioStr.padEnd(14)} | ${stats.blocksFound.toString().padEnd(12)} | ${uptime}s`
-          );
-
-          try {
-            if (status === 0) {
-              let found = false;
-              let socket: Socket<any>;
-              minerData.sockets.forEach(skt => {
-                if (skt.data.workers.has(workerName) && !found) {
-                  this.monitoring.debug(`\nSharesManager ${this.port}: MinerData before - `);
-                  this.logData(minerData);
-                  this.monitoring.debug(
-                    `SharesManager ${this.port}: Status is inactive for worker: ${workerName}, address: ${address}`
-                  );
-                  minerData.workerStats.delete(workerName);
-                  this.monitoring.debug(
-                    `SharesManager ${this.port}: Deleted workerstats: ${workerName}, address: ${address}`
-                  );
-                  socket = skt;
-                  this.monitoring.debug(
-                    `SharesManager ${this.port}: Socket found for deletion: ${workerName}, address: ${address}`
-                  );
-                  found = true;
-                  socket.end();
-                  socket = skt;
-                  minerData.sockets.delete(socket!);
-                  this.monitoring.debug(
-                    `SharesManager ${this.port}: Deleted socket for : ${workerName}, address: ${address}`
-                  );
-                  this.monitoring.debug(`\nSharesManager ${this.port}: MinerData after - `);
-                  this.logData(minerData);
-                }
-              });
-              if (!found) {
-                this.monitoring.debug(
-                  `SharesManager ${this.port}: ERROR - No socket found for deletion for worker: ${workerName}, address: ${address}`
-                );
-                logger.warn(
-                  `SharesManager ${this.port}: No socket found for deletion for worker: ${workerName}, address: ${address}`
-                );
-              }
-            }
-          } catch (error) {
-            this.monitoring.error(
-              `SharesManager ${this.port}: Could not delete inactive worker: ${workerName}, address: ${address} - `,
-              error
-            );
-          }
-        });
-        totalRate += rate;
-      });
-
-      lines.sort();
-      str += lines.join('\n');
-
-      const rateStr = stringifyHashrate(totalRate);
-      const overallStats = this.calculateOverallStats();
-      const ratioStr = `${overallStats.sharesFound}/${overallStats.staleShares}/${overallStats.invalidShares}`;
-
-      str += '\n-------------------------------------------------------------------------------\n';
-      str += `                | ${rateStr.padEnd(14)} | ${ratioStr.padEnd(14)} | ${overallStats.blocksFound.toString().padEnd(12)} | ${(Date.now() - start) / 1000}s`;
-      str += '\n===============================================================================\n';
-
-      this.monitoring.log(str);
-    }, WINDOW_SIZE);
-  }
-
-  // Helper method for stats calculation
-  private calculateOverallStats() {
-    return Array.from(this.miners.values()).reduce(
-      (acc: any, minerData: MinerData) => {
-        minerData.workerStats.forEach(stats => {
-          acc.sharesFound += stats.sharesFound;
-          acc.staleShares += stats.staleShares;
-          acc.invalidShares += stats.invalidShares;
-          acc.blocksFound += stats.blocksFound;
-        });
-        return acc;
-      },
-      { sharesFound: 0, staleShares: 0, invalidShares: 0, blocksFound: 0 }
-    );
-  }
-
   getMiners() {
     return this.miners;
   }
@@ -448,13 +279,5 @@ export class SharesManager {
 
   checkWorkerStatus(stats: WorkerStats) {
     return Date.now() - stats.lastShare <= WINDOW_SIZE ? Math.floor(stats.lastShare / 1000) : 0;
-  }
-
-  logData(minerData: MinerData) {
-    minerData.workerStats.forEach((stats, workerName) => {
-      this.monitoring.log(
-        `SharesManager ${this.port}: stats: ${JsonBig.stringify(stats)}, name: ${workerName}`
-      );
-    });
   }
 }

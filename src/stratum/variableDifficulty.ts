@@ -27,7 +27,7 @@ export class VariableDifficulty {
     const minerData = this.sharesManager.miners.get(address);
     if (!minerData) {
       this.monitoring.error(
-        `SharesManager ${this.sharesManager.port}: No miner data found for address ${address} when updating difficulty`
+        `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${address} when updating difficulty`
       );
       return false;
     }
@@ -44,7 +44,7 @@ export class VariableDifficulty {
 
           if (DEBUG) {
             this.monitoring.debug(
-              `SharesManager ${this.sharesManager.port}: Socket difficulty updated for worker ${workerName} from ${oldDiff} to ${newDifficulty}`
+              `VariableDifficulty ${this.sharesManager.port}: Socket difficulty updated for worker ${workerName} from ${oldDiff} to ${newDifficulty}`
             );
           }
         }
@@ -84,7 +84,7 @@ export class VariableDifficulty {
         if (!minerData || !minerData.workerStats) {
           if (DEBUG)
             this.monitoring.debug(
-              `SharesManager ${this.sharesManager.port}: Invalid miner data for address ${address}`
+              `VariableDifficulty ${this.sharesManager.port}: Invalid miner data for address ${address}`
             );
           continue;
         }
@@ -93,14 +93,14 @@ export class VariableDifficulty {
           if (!workerStats || !workerStats.workerName) {
             if (DEBUG)
               this.monitoring.debug(
-                `SharesManager ${this.sharesManager.port}: Invalid worker stats or worker name for worker ${workerName}`
+                `VariableDifficulty ${this.sharesManager.port}: Invalid worker stats or worker name for worker ${workerName}`
               );
             continue;
           }
 
           if (!workerStats.varDiffEnabled) {
             this.monitoring.debug(
-              `SharesManager ${this.sharesManager.port}: Skipping var diff for user input diff : ${workerName}`
+              `VariableDifficulty ${this.sharesManager.port}: Skipping var diff for user input diff : ${workerName}`
             );
             continue;
           }
@@ -108,7 +108,7 @@ export class VariableDifficulty {
           const status = this.sharesManager.checkWorkerStatus(workerStats);
           if (status === 0) {
             this.monitoring.debug(
-              `SharesManager ${this.sharesManager.port}: Skipping var diff for inactive worker.: ${workerName}`
+              `VariableDifficulty ${this.sharesManager.port}: Skipping var diff for inactive worker.: ${workerName}`
             );
             continue;
           }
@@ -243,7 +243,7 @@ export class VariableDifficulty {
         newMinDiff = 32768; // Bitmain KS5/Pro
       }
       this.monitoring.debug(
-        `SharesManager ${this.sharesManager.port}: varDiffRejectionRateThreshold - worker name: ${stats.workerName}, diff: ${stats.minDiff}, newDiff: ${newMinDiff}`
+        `VariableDifficulty ${this.sharesManager.port}: varDiffRejectionRateThreshold - worker name: ${stats.workerName}, diff: ${stats.minDiff}, newDiff: ${newMinDiff}`
       );
 
       // Log difficulty adjustment due to high rejection rate
@@ -261,7 +261,7 @@ export class VariableDifficulty {
 
     if (newMinDiff != previousMinDiff) {
       this.monitoring.log(
-        `SharesManager ${this.sharesManager.port}:  updating vardiff to ${newMinDiff} for client ${stats.workerName}`
+        `VariableDifficulty ${this.sharesManager.port}:  updating vardiff to ${newMinDiff} for client ${stats.workerName}`
       );
       stats.varDiffStartTime = zeroDateMillS;
       stats.varDiffWindow = 0;
@@ -276,7 +276,7 @@ export class VariableDifficulty {
   }
 
   startClientVardiff(worker: Worker) {
-    const stats = this.sharesManager.getOrCreateWorkerStats(
+    const stats = this.sharesManager.stats.getOrCreateWorkerStats(
       worker.name,
       this.sharesManager.miners.get(worker.address)!
     );
@@ -288,11 +288,11 @@ export class VariableDifficulty {
     if (!minerData) {
       if (DEBUG)
         this.monitoring.debug(
-          `SharesManager ${this.sharesManager.port}: No miner data found for address ${worker.address}, returning default difficulty`
+          `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${worker.address}, returning default difficulty`
         );
       return 128; // Return default difficulty if no miner data exists
     }
-    const stats = this.sharesManager.getOrCreateWorkerStats(worker.name, minerData);
+    const stats = this.sharesManager.stats.getOrCreateWorkerStats(worker.name, minerData);
     return stats.minDiff;
   }
 }
