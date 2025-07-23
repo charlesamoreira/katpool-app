@@ -1,6 +1,7 @@
 import Monitoring from '../monitoring';
 import logger from '../monitoring/datadog';
-import { WINDOW_SIZE, type WorkerStats } from './sharesManager';
+import type { WorkerStats } from '../types';
+import { WINDOW_SIZE } from './sharesManager';
 
 const bigGig = Math.pow(10, 9);
 const maxTarget = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');

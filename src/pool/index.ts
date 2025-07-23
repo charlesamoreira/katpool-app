@@ -4,12 +4,12 @@ import Database from './database';
 import Monitoring from '../monitoring';
 import { sompiToKaspaStringWithSuffix } from '../../wasm/kaspa';
 import { DEBUG, sendConfig } from '../../index';
-import { type Contribution } from '../stratum/sharesManager';
 import axios, { AxiosError } from 'axios';
 import config from '../../config/config.json';
 import axiosRetry from 'axios-retry';
 import JsonBig from 'json-bigint';
 import logger from '../monitoring/datadog';
+import type { Contribution } from '../types';
 
 const monitoring = new Monitoring();
 
