@@ -9,7 +9,6 @@ import { encodeJob } from './templates/jobs/encoding.ts';
 import { SharesManager } from './sharesManager';
 import { jobsNotFound, activeMinerGuage, varDiff } from '../prometheus';
 import Monitoring from '../monitoring/index.ts';
-import { DEBUG } from '../../index';
 import { Mutex } from 'async-mutex';
 import { metrics } from '../../index';
 import Denque from 'denque';
@@ -17,10 +16,7 @@ import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
 import { AsicType, Encoding, type Miner, type Worker } from '../types/index.ts';
-
-const bitMainRegex = new RegExp('.*(GodMiner).*', 'i');
-const iceRiverRegex = new RegExp('.*(IceRiverMiner).*', 'i');
-const goldShellRegex = new RegExp('.*(BzMiner).*', 'i');
+import { DEBUG, minerRegexes } from '../constants/index.ts';
 
 const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;
@@ -248,7 +244,7 @@ export default class Stratum extends EventEmitter {
           if (this.extraNonceSize > 0) {
             socket.data.extraNonce = randomBytes(2).toString('hex');
           }
-          if (bitMainRegex.test(minerType)) {
+          if (minerRegexes.bitMain.test(minerType)) {
             socket.data.encoding = Encoding.Bitmain;
             socket.data.asicType = AsicType.Bitmain;
             response.result = [
@@ -256,9 +252,9 @@ export default class Stratum extends EventEmitter {
               socket.data.extraNonce,
               8 - Math.floor(socket.data.extraNonce.length / 2),
             ];
-          } else if (iceRiverRegex.test(minerType)) {
+          } else if (minerRegexes.iceRiver.test(minerType)) {
             socket.data.asicType = AsicType.IceRiver;
-          } else if (goldShellRegex.test(minerType)) {
+          } else if (minerRegexes.goldShell.test(minerType)) {
             socket.data.asicType = AsicType.GoldShell;
           } else {
             socket.data.asicType = request.params[0] || AsicType.Unknown;

@@ -2,7 +2,6 @@ import type { Socket } from 'bun';
 import { calculateTarget } from '../../wasm/kaspa';
 import { stringifyHashrate, getAverageHashrateGHs, debugHashrateCalculation } from './utils';
 import Monitoring from '../monitoring';
-import { DEBUG } from '../../index';
 import {
   minerAddedShares,
   minerInvalidShares,
@@ -24,8 +23,7 @@ import {
   type Worker,
 } from '../types';
 import JsonBig from 'json-bigint';
-
-export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
+import { DEBUG, WINDOW_SIZE } from '../constants';
 
 const varDiffThreadSleep: number = 10;
 const varDiffRejectionRateThreshold: number = 20; // If rejection rate exceeds threshold, set difficulty based on hash rate.
@@ -115,25 +113,19 @@ export class SharesManager {
 
     const workerStats = this.getOrCreateWorkerStats(minerId, minerData);
     // Critical Section: Check and Add Share
-    let found = false;
-
     for (let i = 0; i < workerStats.recentShares.size(); i++) {
       const share = workerStats.recentShares.get(i);
       if (share?.nonce === nonce) {
-        found = true;
-        break;
+        metrics.updateGaugeInc(minerDuplicatedShares, [minerId, address]);
+        this.monitoring.log(`SharesManager ${this.port}: Duplicate share for miner - ${minerId}`);
+        logger.warn('Duplicate share detected', {
+          minerId,
+          address,
+          port: this.port,
+          nonce: nonce.toString(),
+        });
+        return;
       }
-    }
-    if (found) {
-      metrics.updateGaugeInc(minerDuplicatedShares, [minerId, address]);
-      this.monitoring.log(`SharesManager ${this.port}: Duplicate share for miner - ${minerId}`);
-      logger.warn('Duplicate share detected', {
-        minerId,
-        address,
-        port: this.port,
-        nonce: nonce.toString(),
-      });
-      return;
     }
 
     const timestamp = Date.now();
