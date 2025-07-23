@@ -41,8 +41,8 @@ export default class Templates {
         try {
           await this.subscriber.quit(); // or .disconnect() if you're using redis@4
           this.monitoring.error('Templates: Closed existing Redis connection before reconnecting');
-        } catch (err) {
-          this.monitoring.error(`Templates: Error closing Redis connection: ${err}`);
+        } catch (error) {
+          this.monitoring.error(`Templates: Error closing Redis connection: `, error);
         }
       }
 
