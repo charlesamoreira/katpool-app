@@ -60,11 +60,11 @@ export default class Templates {
         this.monitoring.log(`Templates: Connection to redis established`);
       });
       this.subscriber.on('error', error => {
-        this.monitoring.error(`Templates: Redis client error: ${error}`);
+        this.monitoring.error(`Templates: Redis client error: `, error);
         reconnect();
       });
     } catch (error) {
-      this.monitoring.error(`Templates: Error connecting to redis : ${error}`);
+      this.monitoring.error(`Templates: Error connecting to redis : `, error);
       reconnect();
     }
   }
