@@ -53,6 +53,4 @@ export function getNetworkConfig(network: string) {
 // Regex for ASIC type
 export const minerRegexes = {
   bitMain: /.*(GodMiner).*/i,
-  iceRiver: /.*(IceRiverMiner).*/i,
-  goldShell: /.*(BzMiner).*/i,
 } as const;
