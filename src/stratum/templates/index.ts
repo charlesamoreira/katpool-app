@@ -34,15 +34,15 @@ export default class Templates {
 
   connectRedis() {
     const reconnect = async (delay = 1000) => {
-      logger.error(`Templates: Reconnecting to Redis in ${delay}ms...`);
+      this.monitoring.error(`Templates: Reconnecting to Redis in ${delay}ms...`);
 
       // Ensure existing connection is closed
       if (this.subscriber) {
         try {
           await this.subscriber.quit(); // or .disconnect() if you're using redis@4
-          logger.info('Templates: Closed existing Redis connection before reconnecting');
+          this.monitoring.error('Templates: Closed existing Redis connection before reconnecting');
         } catch (err) {
-          logger.warn(`Templates: Error closing Redis connection: ${err}`);
+          this.monitoring.error(`Templates: Error closing Redis connection: ${err}`);
         }
       }
 
