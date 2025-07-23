@@ -426,7 +426,7 @@ export default class Stratum extends EventEmitter {
             });
 
             throw Error(
-              `Mismatching worker details request: worker.Addr: ${worker?.address}, ${request.params[0]}`
+              `Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
             );
           }
           const hash = this.templates.getHash(request.params[1]);
