@@ -33,18 +33,39 @@ export default class Templates {
   }
 
   connectRedis() {
+    const reconnect = async (delay = 1000) => {
+      this.monitoring.error(`Templates: Reconnecting to Redis in ${delay}ms...`);
+
+      // Ensure existing connection is closed
+      if (this.subscriber) {
+        try {
+          await this.subscriber.quit();
+          this.monitoring.error('Templates: Closed existing Redis connection before reconnecting');
+        } catch (error) {
+          this.monitoring.error(`Templates: Error closing Redis connection: `, error);
+        }
+      }
+
+      // Create new client
+      this.subscriber = redis.createClient({
+        url: 'redis://' + config.redis_address,
+      });
+
+      setTimeout(() => this.connectRedis(), delay);
+    };
+
     try {
       this.subscriber.connect();
       this.subscriber.on('ready', () => {
         this.monitoring.log(`Templates: Connection to redis established`);
-        // TODO: remove this later, or extend monitoring logger for dd
-        logger.info(`Templates: Connection to redis established`);
       });
       this.subscriber.on('error', error => {
         this.monitoring.error(`Templates: Redis client error: `, error);
+        reconnect();
       });
     } catch (error) {
       this.monitoring.error(`Templates: Error connecting to redis : `, error);
+      reconnect();
     }
   }
 
