@@ -14,7 +14,6 @@ import {
 } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
-import { AsicType, type AsicTypeorCustom } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
@@ -37,7 +36,7 @@ export interface WorkerStats {
   minDiff: number;
   recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
   hashrate: number;
-  asicType: AsicTypeorCustom;
+  asicType: string;
   varDiffEnabled: boolean;
 }
 
@@ -112,7 +111,7 @@ export class SharesManager {
         minDiff: this.stratumInitDiff, // Initial difficulty
         recentShares: new Denque<{ timestamp: number; difficulty: number; nonce: bigint }>(),
         hashrate: 0,
-        asicType: AsicType.Unknown,
+        asicType: '',
         varDiffEnabled: varDiffStatus,
       };
       minerData.workerStats.set(workerName, workerStats);
