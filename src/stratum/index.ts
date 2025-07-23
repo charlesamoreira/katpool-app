@@ -18,17 +18,6 @@ import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
 
 const bitMainRegex = new RegExp('.*(GodMiner).*', 'i');
-const iceRiverRegex = new RegExp('.*(IceRiverMiner).*', 'i');
-const goldShellRegex = new RegExp('.*(BzMiner).*', 'i');
-
-export enum AsicType {
-  IceRiver = 'IceRiver',
-  Bitmain = 'Bitmain',
-  GoldShell = 'GoldShell',
-  Unknown = '',
-}
-
-export type AsicTypeorCustom = AsicType | string;
 
 const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;
@@ -258,19 +247,13 @@ export default class Stratum extends EventEmitter {
           }
           if (bitMainRegex.test(minerType)) {
             socket.data.encoding = Encoding.Bitmain;
-            socket.data.asicType = AsicType.Bitmain;
             response.result = [
               null,
               socket.data.extraNonce,
               8 - Math.floor(socket.data.extraNonce.length / 2),
             ];
-          } else if (iceRiverRegex.test(minerType)) {
-            socket.data.asicType = AsicType.IceRiver;
-          } else if (goldShellRegex.test(minerType)) {
-            socket.data.asicType = AsicType.GoldShell;
-          } else {
-            socket.data.asicType = request.params[0] || AsicType.Unknown;
           }
+          socket.data.asicType = request.params[0] || '';
           this.subscriptors.add(socket);
           this.emit('subscription', socket.remoteAddress, request.params[0]);
           this.monitoring.log(
@@ -281,7 +264,6 @@ export default class Stratum extends EventEmitter {
           logger.info('Miner subscribed', {
             port: this.port,
             remoteAddress: socket.remoteAddress,
-            minerType: request.params[0] || 'unknown',
             asicType: socket.data.asicType,
             extraNonce: socket.data.extraNonce || '',
             protocolVersion: request.params[1] || 'unknown',
