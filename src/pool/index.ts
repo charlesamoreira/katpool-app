@@ -9,6 +9,7 @@ import axios, { AxiosError } from 'axios';
 import config from '../../config/config.json';
 import axiosRetry from 'axios-retry';
 import JsonBig from 'json-bigint';
+import logger from '../monitoring/datadog';
 
 const monitoring = new Monitoring();
 
@@ -142,6 +143,9 @@ export default class Pool {
       this.monitoring.debug(
         `Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`
       );
+      logger.warn(
+        `Pool: Used fallback logic for txnId: ${txnId}. Using ${shares.length} fallback shares`
+      );
     }
 
     this.monitoring.debug(`Pool: Retrieved ${shares.length} shares for allocation`);
@@ -199,7 +203,7 @@ export default class Pool {
       if (error.response) {
         this.monitoring.error(`Pool: Response status: ${error.response.status}`);
         if (DEBUG)
-          this.monitoring.error(`Pool: Response data: ${JSON.stringify(error.response.data)}`);
+          this.monitoring.error(`Pool: Response data: ${JsonBig.stringify(error.response.data)}`);
       }
       return { reward_block_hash: '', block_hash: 'block_hash_placeholder', daaScoreF: '0' };
     } else {

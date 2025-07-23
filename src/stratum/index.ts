@@ -28,6 +28,8 @@ export enum AsicType {
   Unknown = '',
 }
 
+export type AsicTypeorCustom = AsicType | string;
+
 const MIN_DIFF = config.stratum[0].minDiff || 64;
 const MAX_DIFF = config.stratum[0].maxDiff || 131072;
 const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
@@ -144,12 +146,18 @@ export default class Stratum extends EventEmitter {
               // Store current difficulty before any updates
               const currentDifficulty = socket.data.difficulty;
               if (varDiff != currentDifficulty && varDiff != 0) {
-                this.monitoring.debug(
-                  `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
+                const updated = this.sharesManager.updateSocketDifficulty(
+                  worker.address,
+                  worker.name,
+                  varDiff
                 );
-                this.sharesManager.updateSocketDifficulty(worker.address, worker.name, varDiff);
-                this.reflectDifficulty(socket, worker.name);
-                this.sharesManager.startClientVardiff(worker);
+                if (updated) {
+                  this.monitoring.debug(
+                    `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
+                  );
+                  this.reflectDifficulty(socket, worker.name);
+                  this.sharesManager.startClientVardiff(worker);
+                }
               }
             }
           }
@@ -260,6 +268,8 @@ export default class Stratum extends EventEmitter {
             socket.data.asicType = AsicType.IceRiver;
           } else if (goldShellRegex.test(minerType)) {
             socket.data.asicType = AsicType.GoldShell;
+          } else {
+            socket.data.asicType = request.params[0] || AsicType.Unknown;
           }
           this.subscriptors.add(socket);
           this.emit('subscription', socket.remoteAddress, request.params[0]);
@@ -416,7 +426,7 @@ export default class Stratum extends EventEmitter {
             });
 
             throw Error(
-              `Mismatching worker details request: worker.Addr: ${worker?.address}, ${request.params[0]}`
+              `Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
             );
           }
           const hash = this.templates.getHash(request.params[1]);

@@ -14,10 +14,11 @@ import {
 } from '../prometheus';
 import { metrics } from '../../index';
 import Denque from 'denque';
-import { AsicType } from '.';
+import { AsicType, type AsicTypeorCustom } from '.';
 import type Templates from './templates';
 import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
+import JsonBig from 'json-bigint';
 
 export const WINDOW_SIZE = 10 * 60 * 1000; // 10 minutes window
 
@@ -36,7 +37,7 @@ export interface WorkerStats {
   minDiff: number;
   recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
   hashrate: number;
-  asicType: AsicType;
+  asicType: AsicTypeorCustom;
   varDiffEnabled: boolean;
 }
 
@@ -331,18 +332,18 @@ export class SharesManager {
           try {
             if (status === 0) {
               let found = false;
-              this.monitoring.debug(`\nSharesManager ${this.port}: MinerData before - `);
-              this.logData(minerData);
-              this.monitoring.debug(
-                `SharesManager ${this.port}: Status is inactive for worker: ${workerName}, address: ${address}`
-              );
-              minerData.workerStats.delete(workerName);
-              this.monitoring.debug(
-                `SharesManager ${this.port}: Deleted workerstats: ${workerName}, address: ${address}`
-              );
               let socket: Socket<any>;
               minerData.sockets.forEach(skt => {
                 if (skt.data.workers.has(workerName) && !found) {
+                  this.monitoring.debug(`\nSharesManager ${this.port}: MinerData before - `);
+                  this.logData(minerData);
+                  this.monitoring.debug(
+                    `SharesManager ${this.port}: Status is inactive for worker: ${workerName}, address: ${address}`
+                  );
+                  minerData.workerStats.delete(workerName);
+                  this.monitoring.debug(
+                    `SharesManager ${this.port}: Deleted workerstats: ${workerName}, address: ${address}`
+                  );
                   socket = skt;
                   this.monitoring.debug(
                     `SharesManager ${this.port}: Socket found for deletion: ${workerName}, address: ${address}`
@@ -350,14 +351,22 @@ export class SharesManager {
                   found = true;
                   socket.end();
                   socket = skt;
+                  minerData.sockets.delete(socket!);
+                  this.monitoring.debug(
+                    `SharesManager ${this.port}: Deleted socket for : ${workerName}, address: ${address}`
+                  );
+                  this.monitoring.debug(`\nSharesManager ${this.port}: MinerData after - `);
+                  this.logData(minerData);
                 }
               });
-              minerData.sockets.delete(socket!);
-              this.monitoring.debug(
-                `SharesManager ${this.port}: Deleted socket for : ${workerName}, address: ${address}`
-              );
-              this.monitoring.debug(`\nSharesManager ${this.port}: MinerData after - `);
-              this.logData(minerData);
+              if (!found) {
+                this.monitoring.debug(
+                  `SharesManager ${this.port}: ERROR - No socket found for deletion for worker: ${workerName}, address: ${address}`
+                );
+                logger.warn(
+                  `SharesManager ${this.port}: No socket found for deletion for worker: ${workerName}, address: ${address}`
+                );
+              }
             }
           } catch (error) {
             this.monitoring.error(
@@ -782,7 +791,7 @@ export class SharesManager {
   logData(minerData: MinerData) {
     minerData.workerStats.forEach((stats, workerName) => {
       this.monitoring.log(
-        `SharesManager ${this.port}: stats: ${JSON.stringify(stats)}, name: ${workerName}`
+        `SharesManager ${this.port}: stats: ${JsonBig.stringify(stats)}, name: ${workerName}`
       );
     });
   }
