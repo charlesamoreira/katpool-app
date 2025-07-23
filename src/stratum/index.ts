@@ -17,9 +17,8 @@ import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
 import { AsicType, Encoding, type Miner, type Worker } from '../types/index.ts';
 import { DEBUG, minerRegexes } from '../constants/index.ts';
+import { getDifficulty } from './utils.ts';
 
-const MIN_DIFF = config.stratum[0].minDiff || 64;
-const MAX_DIFF = config.stratum[0].maxDiff || 131072;
 const DEFAULT_DIFF = config.stratum[0].difficulty || 2048;
 
 export default class Stratum extends EventEmitter {
@@ -154,68 +153,6 @@ export default class Stratum extends EventEmitter {
     socket.write(JSON.stringify(event) + '\n');
   }
 
-  // Function to check if a number is power of 2
-  isPowerOf2(num: number): boolean {
-    return (num & (num - 1)) === 0 && num > 0;
-  }
-
-  // Function to round to the nearest power of 2
-  roundToNearestPowerOf2(num: number): number {
-    if (num < MIN_DIFF || num > MAX_DIFF) return DEFAULT_DIFF;
-
-    let pow = 1;
-    while (pow < num) {
-      pow *= 2;
-    }
-
-    const lower = pow / 2;
-    const upper = pow;
-
-    // Choose the nearest power of 2
-    return num - lower < upper - num ? lower : upper;
-  }
-
-  // Function to extract and validate difficulty
-  parseDifficulty(input: string): number | null {
-    const validPattern = /^(d=|diff=)?\d+$/i;
-
-    if (!validPattern.test(input)) {
-      return null;
-    }
-
-    const match = input.match(/(\d+)/);
-    if (match) {
-      const diff = Number(match[0]);
-      if (!isNaN(diff)) {
-        return diff;
-      }
-    }
-    return null;
-  }
-
-  // Function to apply clamping logic
-  getDifficulty(input: string): number {
-    const diff = this.parseDifficulty(input);
-
-    if (diff === null || diff < MIN_DIFF || diff > MAX_DIFF) {
-      this.monitoring.debug(
-        `Stratum: Invalid difficulty input: ${input}. Using default: ${DEFAULT_DIFF}`
-      );
-      return -1;
-    }
-
-    // Clamp to range
-    const clampedDiff = Math.min(Math.max(diff, MIN_DIFF), MAX_DIFF);
-
-    // Ensure power-of-2 clamping
-    const finalDiff = this.isPowerOf2(clampedDiff)
-      ? clampedDiff
-      : this.roundToNearestPowerOf2(clampedDiff);
-
-    this.monitoring.log(`Stratum: User requested: ${diff}, applied: ${finalDiff}`);
-    return finalDiff;
-  }
-
   private async onMessage(socket: Socket<Miner>, request: Request) {
     const release = await this.minerDataLock.acquire();
     try {
@@ -273,7 +210,7 @@ export default class Stratum extends EventEmitter {
           const userDiffInput = request.params[1];
           if (this.port === 8888 && (userDiffInput != '' || /\d/.test(userDiffInput))) {
             // Only when they connect to this port, allow user defined diff
-            userDiff = this.getDifficulty(userDiffInput);
+            userDiff = getDifficulty(userDiffInput);
             if (userDiff == -1) {
               // Incorrectly set difficulty.
               userDiff = DEFAULT_DIFF;
