@@ -71,7 +71,7 @@ export default class Stratum extends EventEmitter {
     this.clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
     this.varDiff = varDiff || false;
     if (this.varDiff) {
-      this.sharesManager
+      this.sharesManager.varDiff
         .startVardiffThread(sharesPerMin, this.clampPow2)
         .then(() => {
           this.monitoring.log(`Stratum ${this.port}: VarDiff thread started successfully.`);
@@ -130,11 +130,11 @@ export default class Stratum extends EventEmitter {
               this.monitoring.log(`Stratum ${this.port}: Worker stat not found for ${worker.name}`);
             }
             if (check) {
-              let varDiff = this.sharesManager.getClientVardiff(worker);
+              let varDiff = this.sharesManager.varDiff.getClientVardiff(worker);
               // Store current difficulty before any updates
               const currentDifficulty = socket.data.difficulty;
               if (varDiff != currentDifficulty && varDiff != 0) {
-                const updated = this.sharesManager.updateSocketDifficulty(
+                const updated = this.sharesManager.varDiff.updateSocketDifficulty(
                   worker.address,
                   worker.name,
                   varDiff
@@ -144,7 +144,7 @@ export default class Stratum extends EventEmitter {
                     `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
                   );
                   this.reflectDifficulty(socket, worker.name);
-                  this.sharesManager.startClientVardiff(worker);
+                  this.sharesManager.varDiff.startClientVardiff(worker);
                 }
               }
             }
