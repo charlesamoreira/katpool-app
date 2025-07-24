@@ -63,7 +63,7 @@ export class StratumHandler {
     socket.data.asicType = request.params[0] || '';
     subscriptors.add(socket);
     this.monitoring.log(
-      `Stratum ${this.sharesManager.port}: Miner subscribed from ${socket.remoteAddress}`
+      `StratumHandler ${this.sharesManager.port}: Miner subscribed from ${socket.remoteAddress}`
     );
 
     // Log miner subscription
@@ -167,7 +167,7 @@ export class StratumHandler {
 
     if (DEBUG)
       this.monitoring.debug(
-        `Stratum ${this.sharesManager.port}: Authorizing worker - Address: ${address}, Worker Name: ${name}`
+        `StratumHandler ${this.sharesManager.port}: Authorizing worker - Address: ${address}, Worker Name: ${name}`
       );
 
     // Log miner authorization
@@ -199,17 +199,17 @@ export class StratumHandler {
     const [address, name] = request.params[0].split('.');
     if (DEBUG)
       this.monitoring.debug(
-        `Stratum ${this.sharesManager.port}: Submitting job for Worker Name: ${name}`
+        `StratumHandler ${this.sharesManager.port}: Submitting job for Worker Name: ${name}`
       );
     const worker = socket.data.workers.get(name);
     if (DEBUG)
       this.monitoring.debug(
-        `Stratum ${this.sharesManager.port}: Checking worker data on socket for : ${name}`
+        `StratumHandler ${this.sharesManager.port}: Checking worker data on socket for : ${name}`
       );
     if (!worker || worker.address !== address) {
       if (DEBUG)
         this.monitoring.debug(
-          `Stratum ${this.sharesManager.port}: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
+          `StratumHandler ${this.sharesManager.port}: Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
         );
 
       // Log unauthorized share submission attempt
@@ -229,7 +229,7 @@ export class StratumHandler {
     if (!hash) {
       if (DEBUG)
         this.monitoring.debug(
-          `Stratum ${this.sharesManager.port}: Job not found - Address: ${address}, Worker Name: ${name}`
+          `StratumHandler ${this.sharesManager.port}: Job not found - Address: ${address}, Worker Name: ${name}`
         );
       metrics.updateGaugeInc(jobsNotFound, [name, address]);
 
@@ -253,12 +253,12 @@ export class StratumHandler {
       const socketDiff = socket.data.difficulty;
       if (DEBUG)
         this.monitoring.debug(
-          `Stratum ${this.sharesManager.port}: Current difficulties , Worker Name: ${minerId} - Worker: ${workerDiff}, Socket: ${socketDiff}`
+          `StratumHandler ${this.sharesManager.port}: Current difficulties , Worker Name: ${minerId} - Worker: ${workerDiff}, Socket: ${socketDiff}`
         );
       const currentDifficulty = workerDiff || socketDiff;
       if (DEBUG)
         this.monitoring.debug(
-          `Stratum ${this.sharesManager.port}: Adding Share - Address: ${address}, Worker Name: ${name}, Hash: ${hash}, Difficulty: ${currentDifficulty}`
+          `StratumHandler ${this.sharesManager.port}: Adding Share - Address: ${address}, Worker Name: ${name}, Hash: ${hash}, Difficulty: ${currentDifficulty}`
         );
 
       if (socket.data.extraNonce !== '') {
@@ -299,17 +299,19 @@ export class StratumHandler {
         if (!(error instanceof Error)) throw error;
         switch (error.message) {
           case 'Duplicate share':
-            this.monitoring.debug(`Stratum ${this.sharesManager.port}: DUPLICATE_SHARE`);
+            this.monitoring.debug(`StratumHandler ${this.sharesManager.port}: DUPLICATE_SHARE`);
             this.response.error = new StratumError('duplicate-share').toDump();
             break;
           case 'Stale header':
             this.monitoring.debug(
-              `Stratum ${this.sharesManager.port}: Stale Header - JOB_NOT_FOUND`
+              `StratumHandler ${this.sharesManager.port}: Stale Header - JOB_NOT_FOUND`
             );
             this.response.error = new StratumError('job-not-found').toDump();
             break;
           case 'Invalid share':
-            this.monitoring.debug(`Stratum ${this.sharesManager.port}: LOW_DIFFICULTY_SHARE`);
+            this.monitoring.debug(
+              `StratumHandler ${this.sharesManager.port}: LOW_DIFFICULTY_SHARE`
+            );
             this.response.error = new StratumError('low-difficulty-share').toDump();
             break;
           default:
