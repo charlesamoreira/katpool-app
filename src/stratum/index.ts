@@ -152,7 +152,7 @@ export default class Stratum {
       };
       switch (request.method) {
         case 'mining.subscribe': {
-          response = this.stratumHandler.subscribe(socket, request, this.subscriptors);
+          this.stratumHandler.subscribe(socket, request, response, this.subscriptors);
           break;
         }
         case 'mining.authorize': {
@@ -160,7 +160,7 @@ export default class Stratum {
           break;
         }
         case 'mining.submit': {
-          response = this.stratumHandler.submit(socket, request);
+          this.stratumHandler.submit(socket, request, response);
           break;
         }
         default: {

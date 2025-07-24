@@ -22,11 +22,6 @@ export class StratumHandler {
   private difficulty: number;
   private templates: Templates;
   private extraNonceSize: number;
-  private response: Response = {
-    id: 0,
-    result: true,
-    error: null,
-  };
 
   constructor(
     sharesManager: SharesManager,
@@ -41,12 +36,17 @@ export class StratumHandler {
     this.extraNonceSize = extraNonceSize;
   }
 
-  subscribe(socket: Socket<Miner>, request: Request, subscriptors: Set<Socket<Miner>>) {
-    this.response.id = request.id;
+  subscribe(
+    socket: Socket<Miner>,
+    request: Request,
+    response: Response,
+    subscriptors: Set<Socket<Miner>>
+  ) {
+    response.id = request.id;
 
     if (subscriptors.has(socket)) throw Error('Already subscribed');
     const minerType = request.params[0]?.toLowerCase() ?? '';
-    this.response.result = [true, 'EthereumStratum/1.0.0'];
+    response.result = [true, 'EthereumStratum/1.0.0'];
 
     // Format extranonce as a hexadecimal string with padding
     if (this.extraNonceSize > 0) {
@@ -54,7 +54,7 @@ export class StratumHandler {
     }
     if (minerRegexes.bitMain.test(minerType)) {
       socket.data.encoding = Encoding.Bitmain;
-      this.response.result = [
+      response.result = [
         null,
         socket.data.extraNonce,
         8 - Math.floor(socket.data.extraNonce.length / 2),
@@ -75,7 +75,7 @@ export class StratumHandler {
       protocolVersion: request.params[1] || 'unknown',
     });
 
-    return this.response;
+    return;
   }
 
   authorize(socket: Socket<Miner>, request: Request) {
@@ -189,8 +189,8 @@ export class StratumHandler {
     );
   }
 
-  submit(socket: Socket<Miner>, request: Request) {
-    this.response.id = request.id;
+  submit(socket: Socket<Miner>, request: Request, response: Response) {
+    response.id = request.id;
     // Validate params array has required elements
     if (!request.params[2]) {
       throw Error('Missing required parameter: extranonce2');
@@ -242,9 +242,9 @@ export class StratumHandler {
         remoteAddress: socket.remoteAddress,
       });
 
-      this.response.result = false;
-      this.response.error = new StratumError('job-not-found').toDump();
-      return this.response;
+      response.result = false;
+      response.error = new StratumError('job-not-found').toDump();
+      return;
     } else {
       const minerId = name;
       const minerData = this.sharesManager.getMiners().get(worker.address);
@@ -300,19 +300,19 @@ export class StratumHandler {
         switch (error.message) {
           case 'Duplicate share':
             this.monitoring.debug(`StratumHandler ${this.sharesManager.port}: DUPLICATE_SHARE`);
-            this.response.error = new StratumError('duplicate-share').toDump();
+            response.error = new StratumError('duplicate-share').toDump();
             break;
           case 'Stale header':
             this.monitoring.debug(
               `StratumHandler ${this.sharesManager.port}: Stale Header - JOB_NOT_FOUND`
             );
-            this.response.error = new StratumError('job-not-found').toDump();
+            response.error = new StratumError('job-not-found').toDump();
             break;
           case 'Invalid share':
             this.monitoring.debug(
               `StratumHandler ${this.sharesManager.port}: LOW_DIFFICULTY_SHARE`
             );
-            this.response.error = new StratumError('low-difficulty-share').toDump();
+            response.error = new StratumError('low-difficulty-share').toDump();
             break;
           default:
             logger.error('Unknown share processing error', {
@@ -325,9 +325,9 @@ export class StratumHandler {
             });
             throw error;
         }
-        this.response.result = false;
+        response.result = false;
       }
-      return this.response;
+      return;
     }
   }
 
