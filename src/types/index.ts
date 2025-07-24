@@ -2,10 +2,6 @@ import type { Socket } from 'bun';
 import type Denque from 'denque';
 import type { Request, Response } from '../stratum/server/protocol';
 
-export type MinerRow = {
-  balance: bigint;
-};
-
 export type MinerBalanceRow = {
   miner_id: string;
   wallet: string;
