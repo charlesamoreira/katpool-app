@@ -68,7 +68,7 @@ export default class Server {
           const closeReason = socket.data.closeReason || 'Client disconnected';
           if (workers.length === 0) {
             this.monitoring.debug(
-              `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.`
+              `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.  - Reason: ${socket.data.closeReason}`
             );
             logger.warn(
               'Socket Disconnected before worker auth',
@@ -79,7 +79,7 @@ export default class Server {
           } else {
             for (const worker of workers) {
               this.monitoring.debug(
-                `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress}`
+                `server ${this.port}: Worker ${worker.name} disconnected from ${socket.remoteAddress} - Reason: ${socket.data.closeReason}`
               );
               logger.warn(
                 'Socket Worker disconnected',
@@ -102,7 +102,6 @@ export default class Server {
           );
         },
         end: socket => {
-          socket.data.closeReason = 'Socket connection ended gracefully';
           this.monitoring.debug(
             `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
           );

@@ -348,6 +348,7 @@ export class SharesManager {
                     `SharesManager ${this.port}: Socket found for deletion: ${workerName}, address: ${address}`
                   );
                   found = true;
+                  socket.data.closeReason = 'Cleanup after inactivity';
                   socket.end();
                   socket = skt;
                   minerData.sockets.delete(socket!);
