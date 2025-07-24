@@ -9,7 +9,7 @@ import Monitoring from '../monitoring/index.ts';
 import { Mutex } from 'async-mutex';
 import JsonBig from 'json-bigint';
 import { Encoding, type Miner } from '../types/index.ts';
-import { StratumHandler } from './stratum.ts';
+import { StratumHandler } from './stratumHandler.ts';
 import { VariableDifficulty } from './variableDifficulty.ts';
 
 export default class Stratum {
