@@ -10,6 +10,7 @@ import { Mutex } from 'async-mutex';
 import JsonBig from 'json-bigint';
 import { Encoding, type Miner } from '../types/index.ts';
 import { StratumHandler } from './stratum.ts';
+import { VariableDifficulty } from './variableDifficulty.ts';
 
 export default class Stratum {
   server: Server;
@@ -24,6 +25,7 @@ export default class Stratum {
   private extraNonce: number;
   public port: number;
   private stratumHandler: StratumHandler;
+  private variableDiff: VariableDifficulty;
 
   constructor(
     templates: Templates,
@@ -38,7 +40,7 @@ export default class Stratum {
   ) {
     this.monitoring = new Monitoring();
     this.port = port;
-    this.sharesManager = new SharesManager(initialDifficulty, stratumMinDiff, stratumMaxDiff, port);
+    this.sharesManager = new SharesManager(initialDifficulty, stratumMinDiff, port);
     this.server = new Server(
       port,
       initialDifficulty,
@@ -63,10 +65,11 @@ export default class Stratum {
     this.monitoring.log(`Stratum ${this.port}: Initialized with difficulty ${this.difficulty}`);
 
     // Start the VarDiff thread
+    this.variableDiff = new VariableDifficulty(this.sharesManager, stratumMinDiff, stratumMaxDiff);
     this.clampPow2 = clampPow2 || true; // Enable clamping difficulty to powers of 2
     this.varDiff = varDiff || false;
     if (this.varDiff) {
-      this.sharesManager.varDiff
+      this.variableDiff
         .startVardiffThread(sharesPerMin, this.clampPow2)
         .then(() => {
           this.monitoring.log(`Stratum ${this.port}: VarDiff thread started successfully.`);
@@ -113,11 +116,11 @@ export default class Stratum {
               this.monitoring.log(`Stratum ${this.port}: Worker stat not found for ${worker.name}`);
             }
             if (check) {
-              let varDiff = this.sharesManager.varDiff.getClientVardiff(worker);
+              let varDiff = this.variableDiff.getClientVardiff(worker);
               // Store current difficulty before any updates
               const currentDifficulty = socket.data.difficulty;
               if (varDiff != currentDifficulty && varDiff != 0) {
-                const updated = this.sharesManager.varDiff.updateSocketDifficulty(
+                const updated = this.variableDiff.updateSocketDifficulty(
                   worker.address,
                   worker.name,
                   varDiff
@@ -127,7 +130,7 @@ export default class Stratum {
                     `Stratum ${this.port}: Updating difficulty for worker ${worker.name} from ${currentDifficulty} to ${varDiff}`
                   );
                   this.stratumHandler.reflectDifficulty(socket, worker.name);
-                  this.sharesManager.varDiff.startClientVardiff(worker);
+                  this.variableDiff.startClientVardiff(worker);
                 }
               }
             }

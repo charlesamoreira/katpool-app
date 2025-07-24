@@ -8,7 +8,6 @@ import Jobs from './templates/jobs';
 import logger from '../monitoring/datadog';
 import type { Contribution, MinerData, WorkerStats } from '../types';
 import { DEBUG, WINDOW_SIZE } from '../constants';
-import { VariableDifficulty } from './variableDifficulty';
 import { Stats } from './stats';
 
 export class SharesManager {
@@ -19,15 +18,9 @@ export class SharesManager {
   private lastAllocationDaaScore: bigint;
   private stratumMinDiff: number;
   public port: number;
-  public varDiff: VariableDifficulty;
   public stats: Stats;
 
-  constructor(
-    stratumInitDiff: number,
-    stratumMinDiff: number,
-    stratumMaxDiff: number,
-    port: number
-  ) {
+  constructor(stratumInitDiff: number, stratumMinDiff: number, port: number) {
     this.stratumMinDiff = stratumMinDiff;
     this.monitoring = new Monitoring();
     this.stats = new Stats(this, stratumInitDiff);
@@ -36,7 +29,6 @@ export class SharesManager {
     this.lastAllocationTime = Date.now();
     this.lastAllocationDaaScore = 0n;
     this.port = port;
-    this.varDiff = new VariableDifficulty(this, stratumMinDiff, stratumMaxDiff);
   }
 
   async addShare(
