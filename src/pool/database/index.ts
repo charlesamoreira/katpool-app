@@ -3,10 +3,6 @@ import Monitoring from '../../monitoring';
 import JsonBig from 'json-bigint';
 import type { MinerRow, MinerBalanceRow } from '../../types';
 
-const defaultMiner: MinerRow = {
-  balance: 0n,
-};
-
 const monitoring = new Monitoring();
 
 export default class Database {
