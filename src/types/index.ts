@@ -41,7 +41,7 @@ export interface WorkerStats {
   minDiff: number;
   recentShares: Denque<{ timestamp: number; difficulty: number; nonce: bigint }>;
   hashrate: number;
-  asicType: AsicTypeorCustom;
+  asicType: string;
   varDiffEnabled: boolean;
 }
 
@@ -56,20 +56,11 @@ export type Miner = {
   extraNonce: string;
   workers: Map<string, Worker>;
   encoding: Encoding;
-  asicType: AsicTypeorCustom;
+  asicType: string;
   cachedBytes: string;
   connectedAt: number;
   port: number;
 };
-
-export enum AsicType {
-  IceRiver = 'IceRiver',
-  Bitmain = 'Bitmain',
-  GoldShell = 'GoldShell',
-  Unknown = '',
-}
-
-export type AsicTypeorCustom = AsicType | string;
 
 export enum Encoding {
   BigHeader,

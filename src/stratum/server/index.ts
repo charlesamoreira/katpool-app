@@ -4,7 +4,7 @@ import Monitoring from '../../monitoring';
 import type { SharesManager } from '../sharesManager';
 import { markServerUp, updateMinerActivity } from '../../shared/heartbeat';
 import logger from '../../monitoring/datadog';
-import { AsicType, Encoding, type MessageCallback, type Miner } from '../../types';
+import { Encoding, type MessageCallback, type Miner } from '../../types';
 
 export default class Server {
   socket: TCPSocketListener<Miner>;

@@ -15,7 +15,7 @@ import Denque from 'denque';
 import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
-import { AsicType, Encoding, type Miner, type Worker } from '../types/index.ts';
+import { Encoding, type Miner, type Worker } from '../types/index.ts';
 import { DEBUG, minerRegexes } from '../constants/index.ts';
 import { getDifficulty } from './utils.ts';
 

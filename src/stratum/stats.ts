@@ -1,6 +1,6 @@
 import Denque from 'denque';
 import Monitoring from '../monitoring';
-import { AsicType, type MinerData, type WorkerStats } from '../types';
+import { type MinerData, type WorkerStats } from '../types';
 import type { SharesManager } from './sharesManager';
 import { DEBUG, WINDOW_SIZE } from '../constants';
 import { activeMinerGuage, workerHashRateGauge } from '../prometheus';
@@ -45,7 +45,7 @@ export class Stats {
         minDiff: this.stratumInitDiff, // Initial difficulty
         recentShares: new Denque<{ timestamp: number; difficulty: number; nonce: bigint }>(),
         hashrate: 0,
-        asicType: AsicType.Unknown,
+        asicType: '',
         varDiffEnabled: varDiffStatus,
       };
       minerData.workerStats.set(workerName, workerStats);
