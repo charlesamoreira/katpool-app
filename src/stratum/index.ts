@@ -16,6 +16,7 @@ import Denque from 'denque';
 import JsonBig from 'json-bigint';
 import config from '../../config/config.json';
 import logger from '../monitoring/datadog';
+import { getSocketLogData } from './utils.ts';
 
 const bitMainRegex = new RegExp('.*(GodMiner).*', 'i');
 
@@ -107,10 +108,7 @@ export default class Stratum extends EventEmitter {
         this.monitoring.debug(
           `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
         );
-        // logger.info('deleteSocket, Socket readyState is closed', {
-        //   remoteAddress: socket?.remoteAddress || 'unknown',
-        //   workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-        // });
+        logger.info('miner-deleting-socket', getSocketLogData(socket));
         this.subscriptors.delete(socket);
         // try {
         //   socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
@@ -237,7 +235,10 @@ export default class Stratum extends EventEmitter {
       };
       switch (request.method) {
         case 'mining.subscribe': {
-          if (this.subscriptors.has(socket)) throw Error('Already subscribed');
+          if (this.subscriptors.has(socket)) {
+            logger.info('miner-already-subscribed', getSocketLogData(socket));
+            throw Error('Already subscribed');
+          }
           const minerType = request.params[0]?.toLowerCase() ?? '';
           response.result = [true, 'EthereumStratum/1.0.0'];
 
@@ -260,14 +261,7 @@ export default class Stratum extends EventEmitter {
             `Stratum ${this.port}: Miner subscribed from ${socket.remoteAddress}`
           );
 
-          // Log miner subscription
-          logger.info('Miner subscribed', {
-            port: this.port,
-            remoteAddress: socket.remoteAddress,
-            asicType: socket.data.asicType,
-            extraNonce: socket.data.extraNonce || '',
-            protocolVersion: request.params[1] || 'unknown',
-          });
+          logger.info('miner-subscribed', getSocketLogData(socket));
           break;
         }
         case 'mining.authorize': {
@@ -296,8 +290,10 @@ export default class Stratum extends EventEmitter {
           if (!name) throw Error(`Worker name is not set. Request: ${request.params[0]}`);
 
           const worker: Worker = { address, name: name };
-          if (socket.data.workers.has(worker.name))
+          if (socket.data.workers.has(worker.name)) {
+            logger.error('miner-duplicate-worker', getSocketLogData(socket));
             throw Error(`Worker with duplicate name: ${name} for address: ${address}.`);
+          }
           const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
           socket.data.workers.set(worker.name, worker);
           sockets.add(socket);
@@ -364,17 +360,7 @@ export default class Stratum extends EventEmitter {
               `Stratum ${this.port}: Authorizing worker - Address: ${address}, Worker Name: ${name}`
             );
 
-          // Log miner authorization
-          logger.info('Miner authorized', {
-            port: this.port,
-            address,
-            workerName: name,
-            initialDifficulty: userDiff,
-            asicType: socket.data.asicType,
-            varDiffEnabled: varDiffStatus,
-            remoteAddress: socket.remoteAddress,
-            extraNonce: socket.data.extraNonce || '',
-          });
+          logger.info('miner-authorize', getSocketLogData(socket));
 
           metrics.updateGaugeValue(
             activeMinerGuage,
@@ -385,6 +371,11 @@ export default class Stratum extends EventEmitter {
         }
         case 'mining.submit': {
           const [address, name] = request.params[0].split('.');
+          // development retantion tag will override production retantion tag
+          logger.info('miner-submit', {
+            ddtags: 'retention:development',
+            ...getSocketLogData(socket),
+          });
           if (DEBUG)
             this.monitoring.debug(`Stratum ${this.port}: Submitting job for Worker Name: ${name}`);
           const worker = socket.data.workers.get(name);
@@ -418,16 +409,6 @@ export default class Stratum extends EventEmitter {
                 `Stratum ${this.port}: Job not found - Address: ${address}, Worker Name: ${name}`
               );
             metrics.updateGaugeInc(jobsNotFound, [name, address]);
-
-            // Log job not found
-            logger.warn('Job not found for share submission', {
-              port: this.port,
-              address,
-              workerName: name,
-              jobId: request.params[1],
-              remoteAddress: socket.remoteAddress,
-            });
-
             response.result = false;
             response.error = new StratumError('job-not-found').toDump();
             return response;
@@ -472,15 +453,7 @@ export default class Stratum extends EventEmitter {
                 request.params[1]
               );
             } catch (error: any) {
-              // Log share processing error
-              logger.error('Share processing error', {
-                port: this.port,
-                address,
-                workerName: name,
-                jobId: request.params[1],
-                nonce: request.params[2],
-                error: error instanceof Error ? error.message : String(error),
-              });
+              logger.error('miner-error-share-processing', getSocketLogData(socket));
 
               if (!(error instanceof Error)) throw error;
               switch (error.message) {
@@ -497,14 +470,6 @@ export default class Stratum extends EventEmitter {
                   response.error = new StratumError('low-difficulty-share').toDump();
                   break;
                 default:
-                  logger.error('Unknown share processing error', {
-                    port: this.port,
-                    address,
-                    workerName: name,
-                    jobId: request.params[1],
-                    nonce: request.params[2],
-                    error: error.toString(),
-                  });
                   throw error;
               }
               response.result = false;
