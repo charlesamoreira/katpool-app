@@ -108,9 +108,9 @@ export default class Server {
         end: socket => {
           socket.data.closeReason = 'Socket connection ended';
           this.monitoring.debug(
-            `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
+            `server ${this.port}: Socket connection ended for ${socket?.remoteAddress || 'unknown'}`
           );
-          logger.info('Socket connection ended gracefully', getSocketLogData(socket));
+          logger.info('Socket connection ended', getSocketLogData(socket));
         },
         timeout: socket => {
           socket.data.closeReason = 'Connection timeout';
