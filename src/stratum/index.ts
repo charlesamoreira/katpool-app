@@ -233,10 +233,10 @@ export default class Stratum extends EventEmitter {
         result: true,
         error: null,
       };
-      const [address, name] = request.params[0].split('.');
 
       switch (request.method) {
         case 'mining.subscribe': {
+          const [address, name] = request.params[0].split('.');
           if (this.subscriptors.has(socket)) {
             logger.warn('miner-already-subscribed', getSocketLogData(socket, { address, name }));
             throw Error('Already subscribed');
@@ -267,6 +267,7 @@ export default class Stratum extends EventEmitter {
           break;
         }
         case 'mining.authorize': {
+          const [address, name] = request.params[0].split('.');
           let varDiffStatus = false;
           let userDiff = this.difficulty; // Defaults to the ports default difficulty
           const userDiffInput = request.params[1];
@@ -371,6 +372,7 @@ export default class Stratum extends EventEmitter {
           break;
         }
         case 'mining.submit': {
+          const [address, name] = request.params[0].split('.');
           // development retantion tag will override production retantion tag
           logger.info('miner-submit', {
             ddtags: 'retention:development',
