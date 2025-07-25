@@ -53,6 +53,9 @@ export default class Server {
         open: this.onConnect.bind(this),
         data: this.onData.bind(this),
         error: (socket, error) => {
+          socket.data.closeReason = error.message;
+          this.sharesManager.cleanupSocket(socket);
+
           this.monitoring.debug(
             `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
           );
@@ -66,6 +69,10 @@ export default class Server {
         close: socket => {
           const workers = Array.from(socket.data.workers.values());
           const closeReason = socket.data.closeReason || 'Client disconnected';
+
+          // Clean up socket references from SharesManager
+          this.sharesManager.cleanupSocket(socket);
+
           if (workers.length === 0) {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.  - Reason: ${socket.data.closeReason}`
@@ -109,6 +116,7 @@ export default class Server {
         },
         timeout: socket => {
           socket.data.closeReason = 'Connection timeout';
+          this.sharesManager.cleanupSocket(socket);
           this.monitoring.debug(
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
