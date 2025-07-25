@@ -105,10 +105,10 @@ export default class Stratum extends EventEmitter {
       });
     this.subscriptors.forEach(socket => {
       if (socket.readyState === 'closed') {
-        this.monitoring.debug(
-          `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
-        );
-        logger.warn('miner-deleting-socket', getSocketLogData(socket));
+        // this.monitoring.debug(
+        //   `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
+        // );
+        logger.warn('miner-socket-state-detected', getSocketLogData(socket));
         this.subscriptors.delete(socket);
         // try {
         //   socket.data.closeReason = 'Stratum: socket.readyState === "closed"';

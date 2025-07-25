@@ -168,7 +168,7 @@ export default class Server {
               );
               logger.warn(
                 'SocketEnd, Socket error',
-                this.getSocketLogData(socket, {
+                getSocketLogData(socket, {
                   error: error.message,
                 })
               );
@@ -180,7 +180,7 @@ export default class Server {
         this.monitoring.debug(
           `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
-        logger.warn('SocketEnd, Socket parseMessage failed', this.getSocketLogData(socket));
+        logger.warn('SocketEnd, Socket parseMessage failed', getSocketLogData(socket));
         socket.data.closeReason = 'ParseMessage failure';
         socket.end();
       }
@@ -192,7 +192,7 @@ export default class Server {
       this.monitoring.debug(
         `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
-      logger.warn('SocketEnd, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
+      logger.warn('SocketEnd, Socket cachedBytes.length > 512', getSocketLogData(socket));
       socket.data.closeReason = 'CachedBytes length exceeded';
       socket.end();
     }
