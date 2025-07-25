@@ -133,7 +133,7 @@ Review and update `config/config.json` for your pool setup. All backend services
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `payoutCronSchedule` | Payout schedule cron expression | `* */12 * * *` (twice daily) |
-| `backupCronSchedule` | Backup schedule cron expression | `* */12 * * *` (twice daily) |
+| `backupCronSchedule` | Backup schedule cron expression | `0 1,13 * * *` (twice daily) |
 | `payoutAlertCronSchedule` | Telegram alert schedule | `0 1,7,13,19 * * *` (4x daily) |
 | `thresholdAmount` | Minimum payout amount (sompi) | - |
 | `block_wait_time_milliseconds` | Block request timeout (seconds) | - |
