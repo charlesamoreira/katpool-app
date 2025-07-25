@@ -105,7 +105,7 @@ Create the following required files and directories:
 - `init.sql` - Database initialization script
 - `migrate.sql` - Database migration script
 - `nginx.conf` - Nginx configuration
-- `config/` - Configuration directory
+- `config/config.json` - This configuration file is **mounted via** a **volume** in the current setup, so **any changes** made to it **do not require building** a **new Docker image**.
 - `wasm/` - WASM SDK folder
 - `.env` - Environment variables (copy from `.env.sample`)
 
