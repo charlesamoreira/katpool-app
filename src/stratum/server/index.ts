@@ -69,10 +69,7 @@ export default class Server {
         close: socket => {
           const workers = Array.from(socket.data.workers.values());
           const closeReason = socket.data.closeReason || 'Client disconnected';
-
-          // Clean up socket references from SharesManager
           this.sharesManager.cleanupSocket(socket);
-
           if (workers.length === 0) {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.  - Reason: ${socket.data.closeReason}`
@@ -109,6 +106,7 @@ export default class Server {
           );
         },
         end: socket => {
+          socket.data.closeReason = 'Socket connection ended';
           this.monitoring.debug(
             `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
           );
