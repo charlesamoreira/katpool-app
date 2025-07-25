@@ -236,9 +236,8 @@ export default class Stratum extends EventEmitter {
 
       switch (request.method) {
         case 'mining.subscribe': {
-          const [address, name] = request.params[0].split('.');
           if (this.subscriptors.has(socket)) {
-            logger.warn('miner-already-subscribed', getSocketLogData(socket, { address, name }));
+            logger.warn('miner-already-subscribed', getSocketLogData(socket));
             throw Error('Already subscribed');
           }
           const minerType = request.params[0]?.toLowerCase() ?? '';
@@ -263,7 +262,7 @@ export default class Stratum extends EventEmitter {
             `Stratum ${this.port}: Miner subscribed from ${socket.remoteAddress}`
           );
 
-          logger.info('miner-subscribed', getSocketLogData(socket, { address, name }));
+          logger.info('miner-subscribed', getSocketLogData(socket));
           break;
         }
         case 'mining.authorize': {
