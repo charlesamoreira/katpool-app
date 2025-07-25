@@ -1,7 +1,12 @@
 import type { Socket } from 'bun';
 import { calculateTarget } from '../../wasm/kaspa';
 import { type Miner, type Worker } from './server';
-import { stringifyHashrate, getAverageHashrateGHs, debugHashrateCalculation } from './utils';
+import {
+  stringifyHashrate,
+  getAverageHashrateGHs,
+  debugHashrateCalculation,
+  getSocketLogData,
+} from './utils';
 import Monitoring from '../monitoring';
 import { DEBUG } from '../../index';
 import {
@@ -386,10 +391,7 @@ export class SharesManager {
         this.monitoring.debug(
           `SharesManager ${this.port}: Deleted socket for: ${workerName}@${worker.address}`
         );
-        logger.warn(`deleteSocket, ${socket.data.closeReason}`, {
-          address: worker.address,
-          workerName,
-        });
+        logger.warn(`deleteSocket, ${socket.data.closeReason}`, getSocketLogData(socket));
 
         // If no more sockets for this address, clean up the entire miner data
         if (minerData.sockets.size === 0) {
