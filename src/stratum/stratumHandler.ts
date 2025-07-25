@@ -4,7 +4,7 @@ import { Encoding, type Miner, type Worker } from '../types';
 import { metrics } from '../..';
 import logger from '../monitoring/datadog';
 import Denque from 'denque';
-import { getDifficulty } from './utils';
+import { getDifficulty, getSocketLogData } from './utils';
 import Monitoring from '../monitoring';
 import { DEBUG, minerRegexes } from '../constants';
 import { type Request, type Response, type Event, StratumError } from './server/protocol';
@@ -45,6 +45,10 @@ export class StratumHandler {
     response.id = request.id;
 
     if (subscriptors.has(socket)) throw Error('Already subscribed');
+    if (subscriptors.has(socket)) {
+      logger.warn('miner-already-subscribed', getSocketLogData(socket));
+      throw Error('Already subscribed');
+    }
     const minerType = request.params[0]?.toLowerCase() ?? '';
     response.result = [true, 'EthereumStratum/1.0.0'];
 
@@ -67,13 +71,7 @@ export class StratumHandler {
     );
 
     // Log miner subscription
-    logger.info('Miner subscribed', {
-      port: this.sharesManager.port,
-      remoteAddress: socket.remoteAddress,
-      asicType: socket.data.asicType,
-      extraNonce: socket.data.extraNonce || '',
-      protocolVersion: request.params[1] || 'unknown',
-    });
+    logger.info('miner-subscribed', getSocketLogData(socket));
 
     return;
   }
@@ -102,8 +100,10 @@ export class StratumHandler {
     if (!name) throw Error(`Worker name is not set. Request: ${request.params[0]}`);
 
     const worker: Worker = { address, name: name };
-    if (socket.data.workers.has(worker.name))
+    if (socket.data.workers.has(worker.name)) {
+      logger.warn('miner-duplicate-worker', getSocketLogData(socket, { address, name }));
       throw Error(`Worker with duplicate name: ${name} for address: ${address}.`);
+    }
     const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
     socket.data.workers.set(worker.name, worker);
     sockets.add(socket);
@@ -171,16 +171,7 @@ export class StratumHandler {
       );
 
     // Log miner authorization
-    logger.info('Miner authorized', {
-      port: this.sharesManager.port,
-      address,
-      workerName: name,
-      initialDifficulty: userDiff,
-      asicType: socket.data.asicType,
-      varDiffEnabled: varDiffStatus,
-      remoteAddress: socket.remoteAddress,
-      extraNonce: socket.data.extraNonce || '',
-    });
+    logger.info('miner-authorize', getSocketLogData(socket, { address, name }));
 
     metrics.updateGaugeValue(
       activeMinerGuage,
@@ -197,6 +188,12 @@ export class StratumHandler {
     }
 
     const [address, name] = request.params[0].split('.');
+
+    // development retention tag will override production retantion tag
+    logger.info('miner-submit', {
+      ddtags: 'retention:development',
+      ...getSocketLogData(socket, { address, name }),
+    });
     if (DEBUG)
       this.monitoring.debug(
         `StratumHandler ${this.sharesManager.port}: Submitting job for Worker Name: ${name}`
@@ -213,13 +210,10 @@ export class StratumHandler {
         );
 
       // Log unauthorized share submission attempt
-      logger.warn('Unauthorized share submission attempt', {
-        port: this.sharesManager.port,
-        address,
-        workerName: name,
-        workerAddress: worker?.address,
-        remoteAddress: socket.remoteAddress,
-      });
+      logger.warn(
+        'miner-unauthorized-share-submission',
+        getSocketLogData(socket, { address, name })
+      );
 
       throw Error(
         `Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
@@ -232,16 +226,6 @@ export class StratumHandler {
           `StratumHandler ${this.sharesManager.port}: Job not found - Address: ${address}, Worker Name: ${name}`
         );
       metrics.updateGaugeInc(jobsNotFound, [name, address]);
-
-      // Log job not found
-      logger.warn('Job not found for share submission', {
-        port: this.sharesManager.port,
-        address,
-        workerName: name,
-        jobId: request.params[1],
-        remoteAddress: socket.remoteAddress,
-      });
-
       response.result = false;
       response.error = new StratumError('job-not-found').toDump();
       return;
@@ -286,15 +270,7 @@ export class StratumHandler {
           request.params[1]
         );
       } catch (error: any) {
-        // Log share processing error
-        logger.error('Share processing error', {
-          port: this.sharesManager.port,
-          address,
-          workerName: name,
-          jobId: request.params[1],
-          nonce: request.params[2],
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error('miner-error-share-processing', getSocketLogData(socket, { address, name }));
 
         if (!(error instanceof Error)) throw error;
         switch (error.message) {
@@ -315,14 +291,6 @@ export class StratumHandler {
             response.error = new StratumError('low-difficulty-share').toDump();
             break;
           default:
-            logger.error('Unknown share processing error', {
-              port: this.sharesManager.port,
-              address,
-              workerName: name,
-              jobId: request.params[1],
-              nonce: request.params[2],
-              error: error.toString(),
-            });
             throw error;
         }
         response.result = false;

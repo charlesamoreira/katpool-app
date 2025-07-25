@@ -1,7 +1,8 @@
 import { WINDOW_SIZE } from '../constants';
+import type { Socket } from 'bun';
 import Monitoring from '../monitoring';
 import logger from '../monitoring/datadog';
-import type { WorkerStats } from '../types';
+import type { WorkerStats, Miner } from '../types';
 import config from '../../config/config.json';
 
 const MIN_DIFF = config.stratum[0].minDiff || 64;
@@ -65,6 +66,18 @@ export function diffToHash(diff: number): number {
   const result = hashVal / bigGig;
 
   return result;
+}
+
+export function getSocketLogData(socket: Socket<Miner>, additionalData?: Record<string, any>) {
+  return {
+    port: socket.data.port,
+    difficulty: socket.data.difficulty,
+    remoteAddress: socket?.remoteAddress || 'unknown',
+    workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+    connectedAt: socket.data.connectedAt,
+    duration: Date.now() - socket.data.connectedAt,
+    ...additionalData,
+  };
 }
 
 // Debug function to log hashrate calculation details

@@ -19,6 +19,11 @@ const sendLog = async (level: string, message: string, context: LogContext = {})
     baseLogObject.ddtags = 'retention:production';
   }
 
+  // override default retention tag with context tag
+  if (context?.ddtags) {
+    baseLogObject.ddtags = context.ddtags;
+  }
+
   await axios.post(
     DATADOG_LOG_URL,
     {

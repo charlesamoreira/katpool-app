@@ -11,6 +11,8 @@ import JsonBig from 'json-bigint';
 import { Encoding, type Miner } from '../types/index.ts';
 import { StratumHandler } from './stratumHandler.ts';
 import { VariableDifficulty } from './variableDifficulty.ts';
+import { getSocketLogData } from './utils.ts';
+import logger from '../monitoring/datadog.ts';
 
 export default class Stratum {
   server: Server;
@@ -99,9 +101,10 @@ export default class Stratum {
       });
     this.subscriptors.forEach(socket => {
       if (socket.readyState === 'closed') {
-        this.monitoring.debug(
-          `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
-        );
+        // this.monitoring.debug(
+        //   `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
+        // );
+        logger.warn('miner-socket-state-detected', getSocketLogData(socket));
         this.subscriptors.delete(socket);
       } else {
         socket.data.workers.forEach((worker, _) => {
@@ -150,6 +153,7 @@ export default class Stratum {
         result: true,
         error: null,
       };
+
       switch (request.method) {
         case 'mining.subscribe': {
           this.stratumHandler.subscribe(socket, request, response, this.subscriptors);

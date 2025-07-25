@@ -4,6 +4,7 @@ import Monitoring from '../../monitoring';
 import type { SharesManager } from '../sharesManager';
 import { markServerUp, updateMinerActivity } from '../../shared/heartbeat';
 import logger from '../../monitoring/datadog';
+import { getSocketLogData } from '../utils';
 import { Encoding, type MessageCallback, type Miner } from '../../types';
 
 export default class Server {
@@ -36,7 +37,7 @@ export default class Server {
           );
           logger.error(
             'Socket error',
-            this.getSocketLogData(socket, {
+            getSocketLogData(socket, {
               error: error.message,
             })
           );
@@ -50,7 +51,7 @@ export default class Server {
             );
             logger.warn(
               'Socket Disconnected before worker auth',
-              this.getSocketLogData(socket, {
+              getSocketLogData(socket, {
                 closeReason,
               })
             );
@@ -61,7 +62,7 @@ export default class Server {
               );
               logger.warn(
                 'Socket Worker disconnected',
-                this.getSocketLogData(socket, {
+                getSocketLogData(socket, {
                   closeReason,
                 })
               );
@@ -74,7 +75,7 @@ export default class Server {
           );
           logger.error(
             'Socket Connection error',
-            this.getSocketLogData(socket, {
+            getSocketLogData(socket, {
               error: error.message,
             })
           );
@@ -84,30 +85,19 @@ export default class Server {
           this.monitoring.debug(
             `server ${this.port}: Socket connection ended gracefully for ${socket?.remoteAddress || 'unknown'}`
           );
-          logger.info('Socket connection ended gracefully', this.getSocketLogData(socket));
+          logger.info('Socket connection ended gracefully', getSocketLogData(socket));
         },
         timeout: socket => {
           socket.data.closeReason = 'Connection timeout';
           this.monitoring.debug(
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
-          logger.warn('Socket connection timeout', this.getSocketLogData(socket));
+          logger.warn('Socket connection timeout', getSocketLogData(socket));
         },
       },
     });
 
     markServerUp(this.port);
-  }
-
-  private getSocketLogData(socket: Socket<Miner>, additionalData?: Record<string, any>) {
-    return {
-      remoteAddress: socket?.remoteAddress || 'unknown',
-      workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
-      connectedAt: socket.data.connectedAt,
-      duration: Date.now() - socket.data.connectedAt,
-      port: this.port,
-      ...additionalData,
-    };
   }
 
   private onConnect(socket: Socket<Miner>) {
@@ -157,7 +147,7 @@ export default class Server {
               );
               logger.warn(
                 'SocketEnd, Socket error',
-                this.getSocketLogData(socket, {
+                getSocketLogData(socket, {
                   error: error.message,
                 })
               );
@@ -169,7 +159,7 @@ export default class Server {
         this.monitoring.debug(
           `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} because of parseMessage failure`
         );
-        logger.warn('SocketEnd, Socket parseMessage failed', this.getSocketLogData(socket));
+        logger.warn('SocketEnd, Socket parseMessage failed', getSocketLogData(socket));
         socket.data.closeReason = 'ParseMessage failure';
         socket.end();
       }
@@ -181,7 +171,7 @@ export default class Server {
       this.monitoring.debug(
         `server ${this.port}: ERROR Ending socket ${socket?.remoteAddress || 'unknown'} as socket.data.cachedBytes.length > 512`
       );
-      logger.warn('SocketEnd, Socket cachedBytes.length > 512', this.getSocketLogData(socket));
+      logger.warn('SocketEnd, Socket cachedBytes.length > 512', getSocketLogData(socket));
       socket.data.closeReason = 'CachedBytes length exceeded';
       socket.end();
     }
