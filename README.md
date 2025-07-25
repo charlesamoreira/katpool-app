@@ -54,7 +54,9 @@ Block templates are fetched from the GRPC endpoint using a Go-based service. The
 <details>
 <summary>Container Services</summary>
 
-![Internal Container Design](images/katpool-internal-container-design.jpg)
+![Internal Container Design](images/katpool-system-design.png)
+
+Note: If there are changes to the system design, the image above can be updated using the corresponding [drawio](/images/katpool-system-design.drawio) source file.
 
 | Service                | Description                                           |
 | ---------------------- | ----------------------------------------------------- |
