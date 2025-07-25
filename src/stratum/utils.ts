@@ -65,8 +65,8 @@ export function diffToHash(diff: number): number {
 
 export function getSocketLogData(socket: Socket<Miner>, additionalData?: Record<string, any>) {
   return {
-    socketId: Object.keys(socket.data).join(','),
-    data: JSON.stringify(socket.data),
+    port: socket.data.port,
+    difficulty: socket.data.difficulty,
     remoteAddress: socket?.remoteAddress || 'unknown',
     workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
     connectedAt: socket.data.connectedAt,

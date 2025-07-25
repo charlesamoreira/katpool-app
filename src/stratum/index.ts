@@ -108,7 +108,7 @@ export default class Stratum extends EventEmitter {
         this.monitoring.debug(
           `Stratum ${this.port}: Deleting socket on closed stats for: ${socket.data.workers}`
         );
-        logger.info('miner-deleting-socket', getSocketLogData(socket));
+        logger.warn('miner-deleting-socket', getSocketLogData(socket));
         this.subscriptors.delete(socket);
         // try {
         //   socket.data.closeReason = 'Stratum: socket.readyState === "closed"';
@@ -233,10 +233,12 @@ export default class Stratum extends EventEmitter {
         result: true,
         error: null,
       };
+      const [address, name] = request.params[0].split('.');
+
       switch (request.method) {
         case 'mining.subscribe': {
           if (this.subscriptors.has(socket)) {
-            logger.info('miner-already-subscribed', getSocketLogData(socket));
+            logger.warn('miner-already-subscribed', getSocketLogData(socket, { address, name }));
             throw Error('Already subscribed');
           }
           const minerType = request.params[0]?.toLowerCase() ?? '';
@@ -261,12 +263,11 @@ export default class Stratum extends EventEmitter {
             `Stratum ${this.port}: Miner subscribed from ${socket.remoteAddress}`
           );
 
-          logger.info('miner-subscribed', getSocketLogData(socket));
+          logger.info('miner-subscribed', getSocketLogData(socket, { address, name }));
           break;
         }
         case 'mining.authorize': {
           let varDiffStatus = false;
-          const [address, name] = request.params[0].split('.');
           let userDiff = this.difficulty; // Defaults to the ports default difficulty
           const userDiffInput = request.params[1];
           if (this.port === 8888 && (userDiffInput != '' || /\d/.test(userDiffInput))) {
@@ -291,7 +292,7 @@ export default class Stratum extends EventEmitter {
 
           const worker: Worker = { address, name: name };
           if (socket.data.workers.has(worker.name)) {
-            logger.error('miner-duplicate-worker', getSocketLogData(socket));
+            logger.warn('miner-duplicate-worker', getSocketLogData(socket, { address, name }));
             throw Error(`Worker with duplicate name: ${name} for address: ${address}.`);
           }
           const sockets = this.sharesManager.getMiners().get(worker.address)?.sockets || new Set();
@@ -360,7 +361,7 @@ export default class Stratum extends EventEmitter {
               `Stratum ${this.port}: Authorizing worker - Address: ${address}, Worker Name: ${name}`
             );
 
-          logger.info('miner-authorize', getSocketLogData(socket));
+          logger.info('miner-authorize', getSocketLogData(socket, { address, name }));
 
           metrics.updateGaugeValue(
             activeMinerGuage,
@@ -370,11 +371,10 @@ export default class Stratum extends EventEmitter {
           break;
         }
         case 'mining.submit': {
-          const [address, name] = request.params[0].split('.');
           // development retantion tag will override production retantion tag
           logger.info('miner-submit', {
             ddtags: 'retention:development',
-            ...getSocketLogData(socket),
+            ...getSocketLogData(socket, { address, name }),
           });
           if (DEBUG)
             this.monitoring.debug(`Stratum ${this.port}: Submitting job for Worker Name: ${name}`);
@@ -390,13 +390,10 @@ export default class Stratum extends EventEmitter {
               );
 
             // Log unauthorized share submission attempt
-            logger.warn('Unauthorized share submission attempt', {
-              port: this.port,
-              address,
-              workerName: name,
-              workerAddress: worker?.address,
-              remoteAddress: socket.remoteAddress,
-            });
+            logger.warn(
+              'miner-unauthorized-share-submission',
+              getSocketLogData(socket, { address, name })
+            );
 
             throw Error(
               `Mismatching worker details - worker.Addr: ${worker?.address}, Address: ${address}, Worker Name: ${name}`
@@ -453,7 +450,10 @@ export default class Stratum extends EventEmitter {
                 request.params[1]
               );
             } catch (error: any) {
-              logger.error('miner-error-share-processing', getSocketLogData(socket));
+              logger.error(
+                'miner-error-share-processing',
+                getSocketLogData(socket, { address, name })
+              );
 
               if (!(error instanceof Error)) throw error;
               switch (error.message) {
