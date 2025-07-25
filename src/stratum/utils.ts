@@ -1,5 +1,7 @@
+import type { Socket } from 'bun';
 import Monitoring from '../monitoring';
 import logger from '../monitoring/datadog';
+import type { Miner } from './server';
 import { WINDOW_SIZE, type WorkerStats } from './sharesManager';
 
 const bigGig = Math.pow(10, 9);
@@ -59,6 +61,18 @@ export function diffToHash(diff: number): number {
   const result = hashVal / bigGig;
 
   return result;
+}
+
+export function getSocketLogData(socket: Socket<Miner>, additionalData?: Record<string, any>) {
+  return {
+    port: socket.data.port,
+    difficulty: socket.data.difficulty,
+    remoteAddress: socket?.remoteAddress || 'unknown',
+    workers: socket?.data?.workers ? Array.from(socket.data.workers.keys()) : [],
+    connectedAt: socket.data.connectedAt,
+    duration: Date.now() - socket.data.connectedAt,
+    ...additionalData,
+  };
 }
 
 // Debug function to log hashrate calculation details
