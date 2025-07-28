@@ -13,6 +13,7 @@ export default class Server {
   private onMessage: MessageCallback;
   private monitoring: Monitoring;
   private port: number;
+  private sharesManager;
 
   constructor(
     port: number,
@@ -24,6 +25,7 @@ export default class Server {
     this.difficulty = difficulty;
     this.onMessage = onMessage;
     this.port = port;
+    this.sharesManager = sharesManager;
 
     this.socket = Bun.listen({
       hostname: '0.0.0.0',
@@ -33,7 +35,7 @@ export default class Server {
         data: this.onData.bind(this),
         error: (socket, error) => {
           socket.data.closeReason ??= error.message;
-          this.sharesManager.cleanupSocket(socket);
+          this.sharesManager.stats.cleanupSocket(socket);
 
           this.monitoring.debug(
             `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
@@ -48,7 +50,7 @@ export default class Server {
         close: socket => {
           const workers = Array.from(socket.data.workers.values());
           socket.data.closeReason ??= 'Client disconnected';
-          this.sharesManager.cleanupSocket(socket);
+          this.sharesManager.stats.cleanupSocket(socket);
           if (workers.length === 0) {
             this.monitoring.debug(
               `server ${this.port}: Socket from ${socket.remoteAddress} disconnected before worker auth.  - Reason: ${socket.data.closeReason}`
@@ -93,7 +95,7 @@ export default class Server {
         },
         timeout: socket => {
           socket.data.closeReason ??= 'Connection timeout';
-          this.sharesManager.cleanupSocket(socket);
+          this.sharesManager.stats.cleanupSocket(socket);
           this.monitoring.debug(
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
