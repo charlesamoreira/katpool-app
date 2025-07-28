@@ -8,8 +8,8 @@ import { metrics } from '../..';
 import {
   debugHashrateCalculation,
   getAverageHashrateGHs,
-  getSocketLogData,
   stringifyHashrate,
+  getSocketLogData,
 } from './utils';
 import logger from '../monitoring/datadog';
 import type { Socket } from 'bun';
