@@ -1,10 +1,4 @@
 import { calculateTarget } from '../../wasm/kaspa';
-import {
-  stringifyHashrate,
-  getAverageHashrateGHs,
-  debugHashrateCalculation,
-  getSocketLogData,
-} from './utils';
 import Monitoring from '../monitoring';
 import { minerAddedShares, minerInvalidShares, minerDuplicatedShares } from '../prometheus';
 import { metrics } from '../../index';
