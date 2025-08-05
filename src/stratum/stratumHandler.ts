@@ -189,11 +189,6 @@ export class StratumHandler {
 
     const [address, name] = request.params[0].split('.');
 
-    // development retention tag will override production retantion tag
-    logger.info('miner-submit', {
-      ddtags: 'retention:development',
-      ...getSocketLogData(socket, { address, name }),
-    });
     if (DEBUG)
       this.monitoring.debug(
         `StratumHandler ${this.sharesManager.port}: Submitting job for Worker Name: ${name}`
