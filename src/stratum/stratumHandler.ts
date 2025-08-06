@@ -1,5 +1,5 @@
 import type { Socket } from 'bun';
-import { activeMinerGuage, jobsNotFound, varDiff } from '../prometheus';
+import { jobsNotFound, varDiff } from '../prometheus';
 import { Encoding, type Miner, type Worker } from '../types';
 import { metrics } from '../..';
 import logger from '../monitoring/datadog';
@@ -172,12 +172,6 @@ export class StratumHandler {
 
     // Log miner authorization
     logger.info('miner-authorize', getSocketLogData(socket, { address, name }));
-
-    metrics.updateGaugeValue(
-      activeMinerGuage,
-      [name, address, socket.data.asicType, socket.data.port.toString()],
-      Math.floor(Date.now() / 1000)
-    );
   }
 
   submit(socket: Socket<Miner>, request: Request, response: Response) {
