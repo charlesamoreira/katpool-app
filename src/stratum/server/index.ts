@@ -95,11 +95,12 @@ export default class Server {
         },
         timeout: socket => {
           socket.data.closeReason ??= 'Connection timeout';
-          this.sharesManager.stats.cleanupSocket(socket);
           this.monitoring.debug(
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.warn('Socket connection timeout', getSocketLogData(socket));
+          this.sharesManager.stats.cleanupSocket(socket);
+          socket.end();
         },
       },
     });
