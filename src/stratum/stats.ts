@@ -246,6 +246,11 @@ export class Stats {
           }
           logger.warn(msg);
         }
+
+        // if the socket is open, close it
+        if (socket.readyState === 'open') {
+          socket.end();
+        }
       }
     });
   }

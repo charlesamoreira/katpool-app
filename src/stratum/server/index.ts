@@ -103,7 +103,10 @@ export default class Server {
           logger.warn('Socket connection timeout', getSocketLogData(socket));
           // since close called after timeout, we don't need to cleanup the socket
           // this.sharesManager.stats.cleanupSocket(socket);
-          socket.end();
+          if (socket.readyState !== 'closed') {
+            logger.warn('Socket connection timeout, terminating socket', getSocketLogData(socket));
+            socket.terminate();
+          }
         },
       },
     });
