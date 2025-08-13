@@ -19,6 +19,7 @@ export class Stats {
   private monitoring: Monitoring;
   private sharesManager: SharesManager;
   private stratumInitDiff: number;
+  private workerRateHistory: Map<string, number[]> = new Map(); // Track last 5 rates for each worker
 
   constructor(sharesManager: SharesManager, stratumInitDiff: number) {
     this.sharesManager = sharesManager;
@@ -163,42 +164,41 @@ export class Stats {
           const status = this.sharesManager.checkWorkerStatus(stats);
           if (status) {
             const workerRate = getAverageHashrateGHs(stats, address);
+            // Track hashrate history using workerRateHistory Map
+            const workerKey = `${address}.${workerName}`;
+            if (!this.workerRateHistory.has(workerKey)) {
+              this.workerRateHistory.set(workerKey, []);
+            }
 
-            // Query Prometheus for historical hashrate data
-            try {
-              const hashrateHistory = await metrics.queryWorkerHashrateHistory(
-                workerName,
-                address,
-                3
-              );
-              logger.warn('hashrate-history', hashrateHistory);
-              // Check if we have enough data points and if all are exactly the same
-              if (
-                hashrateHistory.length >= 3 &&
-                hashrateHistory.every(rate => rate === hashrateHistory[0])
-              ) {
-                // Clean up worker data - hashrate stagnant for 5 consecutive measurements
-                this.monitoring.error(
-                  `Stats ${this.sharesManager.port}: Cleaning up worker ${workerName}@${address} - hashrate stagnant at ${workerRate} for 5 consecutive measurements`
-                );
+            const hashrateHistory = this.workerRateHistory.get(workerKey)!;
+            hashrateHistory.push(workerRate);
+            logger.warn('hashrateHistory', { hashrateHistory });
+            // Keep only last 5 hashrate measurements
+            if (hashrateHistory.length > 5) {
+              hashrateHistory.shift();
+            }
 
-                minerData.sockets.forEach(skt => {
-                  if (skt.data.workers.has(workerName)) {
-                    skt.data.closeReason = 'Inactive worker timeout - 10 Minute';
-                    skt.end();
-                  }
-                });
-              }
-            } catch (error) {
+            // Check if we have enough data points and if all are exactly the same
+            if (
+              hashrateHistory.length >= 3 &&
+              hashrateHistory.every(rate => rate === hashrateHistory[0])
+            ) {
+              // Clean up worker data - hashrate stagnant for 3+ consecutive measurements
               this.monitoring.error(
-                `Stats ${this.sharesManager.port}: Failed to query hashrate history for worker ${workerName}@${address}:`,
-                error
+                `Stats ${this.sharesManager.port}: Cleaning up worker ${workerName}@${address} - hashrate stagnant at ${workerRate} for ${hashrateHistory.length} consecutive measurements`
               );
+
+              minerData.sockets.forEach(skt => {
+                if (skt.data.workers.has(workerName)) {
+                  skt.data.closeReason = 'cleanWorkerStats inactive worker timeout - 10 Minute';
+                  skt.end();
+                }
+              });
             }
           }
         });
       });
-    }, 1000);
+    }, WINDOW_SIZE);
   }
 
   // Helper method for stats calculation
@@ -232,6 +232,14 @@ export class Stats {
         // If no more sockets for this address, clean up the entire miner data
         if (minerData.sockets.size === 0) {
           this.sharesManager.miners.delete(worker.address);
+
+          // Clean up workerRateHistory for this address
+          const addressWorkers = Array.from(minerData.workerStats.keys());
+          addressWorkers.forEach(workerName => {
+            const workerKey = `${worker.address}.${workerName}`;
+            this.workerRateHistory.delete(workerKey);
+          });
+
           const msg = `Stats ${this.sharesManager.port}: Cleaned up all data for address ${worker.address}`;
           if (DEBUG) {
             this.monitoring.debug(msg);

@@ -101,7 +101,8 @@ export default class Server {
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.warn('Socket connection timeout', getSocketLogData(socket));
-          this.sharesManager.stats.cleanupSocket(socket);
+          // since close called after timeout, we don't need to cleanup the socket
+          // this.sharesManager.stats.cleanupSocket(socket);
           socket.end();
         },
       },
