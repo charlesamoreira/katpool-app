@@ -26,9 +26,9 @@ export class VariableDifficulty {
   updateSocketDifficulty(address: string, workerName: string, newDifficulty: number) {
     const minerData = this.sharesManager.miners.get(address);
     if (!minerData) {
-      this.monitoring.error(
-        `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${address} when updating difficulty`
-      );
+      // this.monitoring.error(
+      //   `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${address} when updating difficulty`
+      // );
       return false;
     }
 
@@ -287,10 +287,10 @@ export class VariableDifficulty {
     const minerData = this.sharesManager.miners.get(worker.address);
     if (!minerData) {
       if (DEBUG)
-        this.monitoring.debug(
-          `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${worker.address}, returning default difficulty`
-        );
-      return 128; // Return default difficulty if no miner data exists
+        // this.monitoring.debug(
+        //   `VariableDifficulty ${this.sharesManager.port}: No miner data found for address ${worker.address}, returning default difficulty`
+        // );
+        return 128; // Return default difficulty if no miner data exists
     }
     const stats = this.sharesManager.stats.getOrCreateWorkerStats(worker.name, minerData);
     return stats.minDiff;
