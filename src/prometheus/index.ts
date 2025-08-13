@@ -127,4 +127,47 @@ export class PushMetrics {
   updateGaugeInc(gauge: client.Gauge, labels: string[]) {
     queue.add(() => gauge.labels(...labels).inc(1));
   }
+
+  // Query Prometheus metrics to get historical data
+  async queryWorkerHashrateHistory(
+    workerName: string,
+    walletAddress: string,
+    samples: number = 5
+  ): Promise<number[]> {
+    try {
+      // Make HTTP request to Prometheus query API
+      const endTime = Math.floor(Date.now() / 1000);
+      const startTime = endTime - samples * 600; // 30 minutes back
+      const step = 600; // 10 minute intervals
+
+      const query = `worker_hash_rate_GHps{miner_id="${workerName}",wallet_address="${walletAddress}"}`;
+      const url = `http://localhost:9999/api/v1/query_range?query=${encodeURIComponent(query)}&start=${startTime}&end=${endTime}&step=${step}`;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as {
+        status: string;
+        data?: {
+          result?: Array<{
+            values?: Array<[number, string]>;
+          }>;
+        };
+      };
+
+      if (data.status === 'success' && data.data?.result?.[0]?.values) {
+        const values = data.data.result[0].values;
+        // Extract the hashrate values from the time series data
+        return values.map(([timestamp, value]) => parseFloat(value));
+      }
+
+      // Fallback: return empty array if no data found
+      return [];
+    } catch (error) {
+      monitoring.error('Failed to query worker hashrate history:', error);
+      return [];
+    }
+  }
 }

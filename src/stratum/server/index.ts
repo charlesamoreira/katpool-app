@@ -35,8 +35,8 @@ export default class Server {
         data: this.onData.bind(this),
         error: (socket, error) => {
           socket.data.closeReason ??= error.message;
-          this.sharesManager.stats.cleanupSocket(socket);
-
+          // socket close is guranteed after error and we don't need to cleanup the socket
+          // this.sharesManager.stats.cleanupSocket(socket);
           this.monitoring.debug(
             `server ${this.port}: ERROR ${socket?.remoteAddress || 'unknown'} Opening socket ${error}`
           );
@@ -87,19 +87,22 @@ export default class Server {
           );
         },
         end: socket => {
+          // this method triggers the close event after a short delay
           socket.data.closeReason ??= 'Socket connection ended';
           this.monitoring.debug(
             `server ${this.port}: Socket connection ended for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.info('Socket connection ended', getSocketLogData(socket));
+          socket.end();
         },
         timeout: socket => {
           socket.data.closeReason ??= 'Connection timeout';
-          this.sharesManager.stats.cleanupSocket(socket);
           this.monitoring.debug(
             `server ${this.port}: Connection timeout for ${socket?.remoteAddress || 'unknown'}`
           );
           logger.warn('Socket connection timeout', getSocketLogData(socket));
+          this.sharesManager.stats.cleanupSocket(socket);
+          socket.end();
         },
       },
     });
@@ -123,6 +126,7 @@ export default class Server {
   }
 
   private onData(socket: Socket<Miner>, data: Buffer) {
+    socket.write(new Uint8Array([0x00]));
     updateMinerActivity(this.port); // Any connection
 
     socket.data.cachedBytes += data;

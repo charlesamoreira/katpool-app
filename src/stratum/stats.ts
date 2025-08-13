@@ -155,6 +155,52 @@ export class Stats {
     }, WINDOW_SIZE);
   }
 
+  cleanWorkerStats() {
+    setInterval(async () => {
+      this.sharesManager.miners.forEach(async (minerData, address) => {
+        minerData.workerStats.forEach(async (stats, workerName) => {
+          // Update active status metrics
+          const status = this.sharesManager.checkWorkerStatus(stats);
+          if (status) {
+            const workerRate = getAverageHashrateGHs(stats, address);
+
+            // Query Prometheus for historical hashrate data
+            try {
+              const hashrateHistory = await metrics.queryWorkerHashrateHistory(
+                workerName,
+                address,
+                3
+              );
+              logger.warn('hashrate-history', hashrateHistory);
+              // Check if we have enough data points and if all are exactly the same
+              if (
+                hashrateHistory.length >= 3 &&
+                hashrateHistory.every(rate => rate === hashrateHistory[0])
+              ) {
+                // Clean up worker data - hashrate stagnant for 5 consecutive measurements
+                this.monitoring.error(
+                  `Stats ${this.sharesManager.port}: Cleaning up worker ${workerName}@${address} - hashrate stagnant at ${workerRate} for 5 consecutive measurements`
+                );
+
+                minerData.sockets.forEach(skt => {
+                  if (skt.data.workers.has(workerName)) {
+                    skt.data.closeReason = 'Inactive worker timeout - 10 Minute';
+                    skt.end();
+                  }
+                });
+              }
+            } catch (error) {
+              this.monitoring.error(
+                `Stats ${this.sharesManager.port}: Failed to query hashrate history for worker ${workerName}@${address}:`,
+                error
+              );
+            }
+          }
+        });
+      });
+    }, 1000);
+  }
+
   // Helper method for stats calculation
   private calculateOverallStats() {
     return Array.from(this.sharesManager.miners.values()).reduce(
