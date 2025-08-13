@@ -99,13 +99,13 @@ export class SharesManager {
         );
       metrics.updateGaugeInc(minerInvalidShares, [minerId, address]);
       workerStats.invalidShares++;
-      logger.warn('Invalid share detected', {
-        minerId,
-        address,
-        port: this.port,
-        target: target.toString(),
-        difficulty: currentDifficulty,
-      });
+      // logger.warn('Invalid share detected', {
+      //   minerId,
+      //   address,
+      //   port: this.port,
+      //   target: target.toString(),
+      //   difficulty: currentDifficulty,
+      // });
       return;
     }
 
