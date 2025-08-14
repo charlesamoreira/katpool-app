@@ -75,10 +75,7 @@ export default class Monitoring {
     } else if (error !== undefined && error !== null) {
       message += `${String(error)}`;
     }
-    // TODO: This is a temporary fix to avoid sending redundant error messages
-    if (!message.startsWith('VariableDifficulty')) {
-      datadogLogger.error(message);
-    }
+    datadogLogger.error(message);
     this.logQueue.add(() => this.processLog({ level: 'ERROR', message }));
   }
 

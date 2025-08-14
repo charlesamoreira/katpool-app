@@ -130,7 +130,7 @@ export default class Server {
   }
 
   private onData(socket: Socket<Miner>, data: Buffer) {
-    socket.write(new Uint8Array([0x00]));
+    // socket.write(new Uint8Array([0x00]));
     updateMinerActivity(this.port); // Any connection
 
     socket.data.cachedBytes += data;
