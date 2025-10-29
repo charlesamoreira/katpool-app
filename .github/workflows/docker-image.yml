@@ -32,7 +32,7 @@ jobs:
 
       - name: Docker Build with Cache
         env:
-          IMAGE_NAME: ${{ env.REPOSITORY_NAME }}:beta-v1.0.2-${{ env.branch_name }}
+          IMAGE_NAME: ${{ env.REPOSITORY_NAME }}:beta-${{ env.branch_name }}
           CACHE_FROM: ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:buildcache
         run: |
           docker buildx build \
@@ -44,7 +44,7 @@ jobs:
 
       - name: Docker Build DB Backup with Cache
         env:
-          IMAGE_NAME: ${{ env.REPOSITORY_NAME }}-db-backup:beta-v1.0.2-${{ env.branch_name }}
+          IMAGE_NAME: ${{ env.REPOSITORY_NAME }}-db-backup:beta-${{ env.branch_name }}
           CACHE_FROM: ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}-db-backup:buildcache
         run: |
           docker buildx build \
